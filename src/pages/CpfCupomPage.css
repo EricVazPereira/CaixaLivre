@@ -1,0 +1,100 @@
+/* ═══════════════════════ CpfCupomPage ═══════════════════════ */
+.cpf-root {
+  height: 100%;
+  background: var(--bg-page);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.cpf-orb {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+  animation: float-orb 9s ease-in-out infinite;
+}
+.cpf-orb-1 {
+  width: 400px; height: 400px;
+  background: radial-gradient(circle, rgba(0,139,195,0.07) 0%, transparent 70%);
+  top: -10%; right: -5%; filter: blur(50px);
+}
+.cpf-orb-2 {
+  width: 300px; height: 300px;
+  background: radial-gradient(circle, rgba(61,61,61,0.06) 0%, transparent 70%);
+  bottom: -8%; left: 5%; filter: blur(60px);
+  animation-duration: 12s; animation-direction: reverse;
+}
+
+.cpf-card {
+  background: var(--bg-panel);
+  border-radius: var(--radius-lg);
+  padding: 3rem 3.5rem;
+  width: 100%;
+  max-width: 460px;
+  box-shadow: var(--shadow-xl);
+  border: 1px solid rgba(0,139,195,0.10);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+  position: relative;
+  z-index: 1;
+}
+
+.cpf-icon-wrap {
+  width: 72px; height: 72px;
+  border-radius: 50%;
+  background: rgba(0,139,195,0.08);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 2.2rem; color: var(--fenix-blue);
+}
+
+.cpf-title {
+  font-size: 1.75rem; font-weight: 800;
+  letter-spacing: -0.04em; color: var(--ink-primary); text-align: center;
+}
+
+.cpf-desc {
+  font-size: 0.95rem; color: var(--ink-muted);
+  text-align: center; line-height: 1.6; max-width: 28ch;
+}
+
+.cpf-btns { width: 100%; display: flex; flex-direction: column; gap: 0.75rem; }
+
+/* CPF formatted display */
+.cpf-display-formatted {
+  width: 100%;
+  background: var(--bg-subtle);
+  border: 2px solid rgba(0,139,195,0.15);
+  border-radius: var(--radius-md);
+  padding: 1rem 1.5rem;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 1.6rem; font-weight: 600; letter-spacing: 0.12em;
+  color: var(--ink-primary); text-align: center;
+  min-height: 68px;
+  display: flex; align-items: center; justify-content: center;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.cpf-display--active {
+  border-color: var(--fenix-blue);
+  box-shadow: 0 0 0 3px rgba(0,139,195,0.10);
+}
+
+/* Numpad — herda o estilo Apple definido em AutorizacaoPage.css */
+
+.cpf-erro {
+  width: 100%;
+  display: flex; align-items: center; gap: 0.5rem;
+  background: rgba(229,57,53,0.08);
+  border: 1px solid rgba(229,57,53,0.25);
+  border-radius: var(--radius-md);
+  padding: 0.75rem 1rem;
+  font-size: 0.82rem; font-weight: 500; color: var(--fenix-red);
+  line-height: 1.4;
+}
+
+.cpf-btns-bottom { width: 100%; display: flex; gap: 0.75rem; }

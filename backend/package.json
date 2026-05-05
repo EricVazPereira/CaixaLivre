@@ -1,0 +1,17 @@
+{
+  "name": "caixalivre-backend",
+  "version": "0.1.0",
+  "type": "commonjs",
+  "scripts": {
+    "dev": "node --watch src/server.js",
+    "start": "node src/server.js",
+    "seed": "node src/seed.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.19.2",
+    "node-firebird": "^2.0.2",
+    "node-sqlite3-wasm": "^0.8.27",
+    "serialport": "^13.0.0"
+  }
+}

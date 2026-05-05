@@ -1,0 +1,235 @@
+/* ═══════════════════════ ConsultaVendasPage ═══════════════════════ */
+.consulta-root {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background: var(--bg-subtle);
+  overflow: hidden;
+}
+
+/* ── Header ── */
+.consulta-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0 2rem;
+  height: 68px;
+  background: var(--bg-panel);
+  border-bottom: 1px solid rgba(0,139,195,0.12);
+  box-shadow: var(--shadow-sm);
+  flex-shrink: 0;
+}
+
+.consulta-header-logo {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 1.1rem;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  color: var(--ink-primary);
+}
+.consulta-header-logo span { color: var(--fenix-blue); }
+
+.consulta-header-sub {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  color: var(--ink-muted);
+  margin-left: auto;
+}
+
+/* ── Main ── */
+.consulta-main {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1.5rem 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+/* ── Stats row ── */
+.stats-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+}
+
+.stat-card {
+  background: var(--bg-panel);
+  border-radius: var(--radius-lg);
+  padding: 1.25rem 1.5rem;
+  border: 1px solid rgba(0,139,195,0.08);
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.stat-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+
+.stat-card-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  color: var(--ink-muted);
+}
+.stat-card-valor {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 1.75rem;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  color: var(--ink-primary);
+}
+.stat-card--destaque .stat-card-valor { color: var(--fenix-blue); }
+
+/* ── Lista de cupons ── */
+.cupons-section-title {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  color: var(--ink-muted);
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid rgba(0,139,195,0.10);
+}
+
+.cupons-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.consulta-msg {
+  text-align: center;
+  padding: 3rem;
+  color: var(--ink-muted);
+  font-size: 0.95rem;
+}
+.consulta-msg--erro { color: var(--fenix-red); }
+
+/* Cupom card */
+.cupom-card {
+  background: var(--bg-panel);
+  border-radius: var(--radius-lg);
+  border: 1px solid rgba(0,139,195,0.08);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+  transition: box-shadow 0.2s;
+}
+.cupom-card:hover { box-shadow: var(--shadow-md); }
+.cupom-card--cancelado { opacity: 0.65; }
+
+/* Cabeçalho do cupom */
+.cupom-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid rgba(0,139,195,0.07);
+}
+
+.cupom-id {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--ink-muted);
+  background: var(--bg-subtle);
+  padding: 0.3rem 0.7rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(0,139,195,0.10);
+  flex-shrink: 0;
+}
+
+.cupom-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  flex: 1;
+}
+.cupom-data {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--ink-secondary);
+}
+.cupom-forma {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--ink-muted);
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.cupom-direita {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.3rem;
+  flex-shrink: 0;
+}
+
+.cupom-status {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 8px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  padding: 0.25rem 0.7rem;
+  border-radius: var(--radius-pill);
+}
+.status--paga     { background: rgba(0,205,43,0.12);  color: #1B7A2B; border: 1px solid rgba(0,205,43,0.3); }
+.status--cancelada{ background: rgba(229,57,53,0.10);  color: var(--fenix-red); border: 1px solid rgba(229,57,53,0.25); }
+.status--aberta   { background: rgba(0,139,195,0.10);  color: var(--fenix-blue); border: 1px solid rgba(0,139,195,0.25); }
+
+.cupom-total {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 1.1rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: var(--ink-primary);
+}
+
+/* Itens do cupom */
+.cupom-itens {
+  padding: 0.75rem 1.25rem;
+  background: var(--bg-subtle);
+}
+.itens-header {
+  display: grid;
+  grid-template-columns: 1fr 70px 80px 80px;
+  gap: 0.5rem;
+  padding-bottom: 0.4rem;
+  margin-bottom: 0.4rem;
+  border-bottom: 1px solid rgba(0,139,195,0.08);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 8px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--ink-muted);
+}
+.item-row {
+  display: grid;
+  grid-template-columns: 1fr 70px 80px 80px;
+  gap: 0.5rem;
+  padding: 0.35rem 0;
+  font-size: 0.82rem;
+  color: var(--ink-secondary);
+  border-bottom: 1px solid rgba(0,139,195,0.05);
+}
+.item-row:last-child { border-bottom: none; }
+.item-desc { font-weight: 500; }
+.item-qtd, .item-vunit, .item-vtotal {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.78rem;
+  text-align: right;
+}
+.item-vtotal { color: var(--fenix-blue); font-weight: 600; }

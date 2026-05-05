@@ -1,0 +1,196 @@
+/* ═══════════════════════ AberturaCaixaPage ═══════════════════════ */
+.abertura-root {
+  min-height: 100vh;
+  background: var(--bg-page);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.abertura-orb {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+  animation: float-orb 9s ease-in-out infinite;
+}
+.abertura-orb-1 {
+  width: 500px; height: 500px;
+  background: radial-gradient(circle, rgba(0,139,195,0.10) 0%, transparent 70%);
+  top: -10%; right: -5%;
+  filter: blur(50px);
+}
+.abertura-orb-2 {
+  width: 350px; height: 350px;
+  background: radial-gradient(circle, rgba(0,205,43,0.08) 0%, transparent 70%);
+  bottom: -8%; left: 5%;
+  filter: blur(60px);
+  animation-duration: 12s;
+  animation-direction: reverse;
+}
+
+.abertura-card {
+  background: var(--bg-panel);
+  border-radius: var(--radius-lg);
+  padding: 3.5rem 4rem;
+  width: 100%;
+  max-width: 560px;
+  box-shadow: var(--shadow-xl);
+  border: 1px solid rgba(0,139,195,0.10);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.75rem;
+  position: relative;
+  z-index: 1;
+}
+
+.abertura-logo-mark {
+  width: 64px; height: 64px;
+  background: linear-gradient(135deg, var(--fenix-blue) 0%, var(--fenix-green) 100%);
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--shadow-md);
+  font-size: 2rem;
+}
+
+.abertura-title {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 2.5rem;
+  font-weight: 800;
+  letter-spacing: -0.05em;
+  color: var(--ink-primary);
+  text-align: center;
+  line-height: 1;
+}
+.abertura-title span { color: var(--fenix-blue); }
+
+.abertura-estacao {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: rgba(0,139,195,0.07);
+  border: 1px solid rgba(0,139,195,0.2);
+  border-radius: var(--radius-pill);
+  padding: 0.4rem 1rem;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  color: var(--fenix-blue);
+}
+
+.abertura-status {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.75rem 1.5rem;
+  border-radius: var(--radius-pill);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+}
+.abertura-status--aberto {
+  background: rgba(0,205,43,0.10);
+  border: 1px solid rgba(0,205,43,0.3);
+  color: #1B7A2B;
+}
+.abertura-status--fechado {
+  background: rgba(229,57,53,0.08);
+  border: 1px solid rgba(229,57,53,0.25);
+  color: var(--fenix-red);
+}
+
+.status-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.status-dot--verde {
+  background: var(--fenix-green);
+  box-shadow: 0 0 6px var(--fenix-green);
+  animation: pulse-dot 2s ease-in-out infinite;
+}
+.status-dot--vermelho { background: var(--fenix-red); }
+
+.abertura-btn-wrap {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.abertura-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  color: var(--ink-muted);
+  font-size: 0.875rem;
+}
+.abertura-spinner {
+  width: 32px; height: 32px;
+  border: 3px solid rgba(0,139,195,0.2);
+  border-top-color: var(--fenix-blue);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.abertura-erro {
+  width: 100%;
+  background: rgba(229,57,53,0.08);
+  border: 1px solid rgba(229,57,53,0.25);
+  border-radius: var(--radius-md);
+  padding: 1rem 1.25rem;
+  font-size: 0.85rem;
+  color: var(--fenix-red);
+  font-weight: 500;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  line-height: 1.5;
+}
+
+.abertura-aviso-balanca {
+  width: 100%;
+  background: linear-gradient(135deg, rgba(200,113,11,0.08) 0%, rgba(236,191,49,0.08) 100%);
+  border: 1px solid rgba(200,113,11,0.30);
+  border-radius: var(--radius-md);
+  padding: 1rem 1.25rem;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  color: var(--fenix-orange);
+}
+
+.abertura-aviso-balanca iconify-icon {
+  margin-top: 2px;
+}
+
+.abertura-aviso-balanca div {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.abertura-aviso-balanca strong {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--fenix-orange);
+}
+
+.abertura-aviso-balanca span {
+  font-size: 0.82rem;
+  font-weight: 400;
+  color: var(--ink-muted);
+  line-height: 1.4;
+}
