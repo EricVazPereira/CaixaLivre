@@ -200,4 +200,58 @@ async function fecharCaixaERP(cod_executor = '0') {
   });
 }
 
-module.exports = { NM_ESTACAO, verificarCaixaAberto, abrirCaixaERP, gravarItensERP, fecharComandaERP, fecharCaixaERP };
+/**
+ * Consulta o FORMATO_PRO de um produto via ERP.
+ * GET /datasnap/rest/TSM/ConsultaFormatoProduto/{cod_pro}
+ * Retorna { cod_pro, ds_pro, formato_pro, fl_ativo } ou lança em caso de falha.
+ */
+function consultaFormatoProduto(codPro) {
+  const path = `${ERP_BASE}/ConsultaFormatoProduto/${encodeURIComponent(String(codPro))}`;
+
+  return new Promise((resolve, reject) => {
+    const options = {
+      hostname: ERP_HOST,
+      port:     ERP_PORT,
+      path,
+      method:   'GET',
+      headers: {
+        Authorization: AUTH,
+        Accept:        'application/json',
+      },
+    };
+
+    const req = httpLib.request(options, (res) => {
+      let data = '';
+      res.setEncoding('utf8');
+      res.on('data', chunk => { data += chunk; });
+      res.on('end', () => {
+        if (res.statusCode < 200 || res.statusCode >= 300)
+          return reject(new Error(`ERP ConsultaFormatoProduto → HTTP ${res.statusCode}: ${data}`));
+        try {
+          const parsed = JSON.parse(data);
+          resolve(parsed.result !== undefined ? parsed.result[0] : parsed);
+        } catch {
+          resolve(data.trim());
+        }
+      });
+    });
+
+    req.on('error', e => reject(new Error(`Conexão com ERP falhou: ${e.message}`)));
+    req.setTimeout(10_000, () => { req.destroy(); reject(new Error('ERP timeout (10s)')); });
+    req.end();
+  });
+}
+
+/**
+ * Grava o FORMATO_PRO de um produto via ERP.
+ * POST /datasnap/rest/TSM/GravaFormatoProduto
+ * Body: { cod_pro: "1", formato: "1" }
+ */
+function gravaFormatoProduto(codPro, pesoGramas) {
+  return chamarERPPost('GravaFormatoProduto', {
+    cod_pro: String(codPro),
+    formato: String(pesoGramas),
+  });
+}
+
+module.exports = { NM_ESTACAO, verificarCaixaAberto, abrirCaixaERP, gravarItensERP, fecharComandaERP, fecharCaixaERP, consultaFormatoProduto, gravaFormatoProduto };

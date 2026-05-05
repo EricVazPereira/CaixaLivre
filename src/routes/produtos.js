@@ -1,5 +1,6 @@
 const { Router } = require('express');
-const { query, withTransaction } = require('../db');
+const { query } = require('../db');
+const { consultaFormatoProduto, gravaFormatoProduto } = require('../erp');
 
 const router = Router();
 
@@ -15,7 +16,7 @@ router.get('/:codigo', async (req, res) => {
     const rows = await query(
       `SELECT CD_PRO, DS_PRO, VL_VENDA_PRO, QT_EST_ATUAL_PRO, UN_PRO,
               NCM_PRO, SIT_TRIB_PRO, ALIQUOTA_PRO, CD_CST_PRO, CFOP_SAI_SAT_PRO,
-              CD_CST_SAI_PRO, CST_PIS_SAI_PRO, CST_COFINS_SAI_PRO, FORMATO_PRO
+              CD_CST_SAI_PRO, CST_PIS_SAI_PRO, CST_COFINS_SAI_PRO
        FROM PRODUTO
        WHERE CD_PRO = ?
          AND FL_ATIVO_PRO = 1
@@ -28,6 +29,20 @@ router.get('/:codigo', async (req, res) => {
     }
 
     const p = rows[0];
+
+    // Busca FORMATO_PRO via ERP (fonte de verdade); falha silenciosa → peso_gramas null
+    let peso_gramas = null;
+    try {
+      const fmt = await consultaFormatoProduto(codigo);
+      const raw = fmt?.formato_pro ?? fmt?.FORMATO_PRO;
+      if (raw !== undefined && raw !== null && raw !== '') {
+        const parsed = parseInt(raw, 10);
+        if (!isNaN(parsed) && parsed > 0) peso_gramas = parsed;
+      }
+    } catch (e) {
+      console.warn('[produtos] ConsultaFormatoProduto falhou para', codigo, '—', e.message);
+    }
+
     res.json({
       codigo:         (p['CD_PRO']           || '').trim(),
       descricao:      (p['DS_PRO']           || '').trim(),
@@ -41,7 +56,7 @@ router.get('/:codigo', async (req, res) => {
       cst_pis:        (p['CST_PIS_SAI_PRO']  || '').trim(),
       cst_cofins:     (p['CST_COFINS_SAI_PRO']|| '').trim(),
       cfop:           (p['CFOP_SAI_SAT_PRO'] || '').trim(),
-      peso_gramas:    p['FORMATO_PRO'] ? parseInt(p['FORMATO_PRO'], 10) || null : null,
+      peso_gramas,
     });
   } catch (e) {
     console.error('[produtos] GET /:codigo', e.message);
@@ -83,13 +98,8 @@ router.patch('/:codigo/formato-pro', async (req, res) => {
     if (!peso || peso <= 0) {
       return res.status(400).json({ erro: 'peso_gramas inválido' })
     }
-    await withTransaction(async (trQuery) => {
-      await trQuery(
-        `UPDATE PRODUTO SET FORMATO_PRO = ? WHERE CD_PRO = ?`,
-        [String(peso), codigo]
-      )
-    })
-    console.log(`[produtos] FORMATO_PRO gravado: ${codigo} → ${peso}g`)
+    await gravaFormatoProduto(codigo, peso)
+    console.log(`[produtos] FORMATO_PRO gravado via ERP: ${codigo} → ${peso}g`)
     res.json({ ok: true, codigo, peso_gramas: peso })
   } catch (e) {
     console.error('[produtos] PATCH /:codigo/formato-pro', e.message)
