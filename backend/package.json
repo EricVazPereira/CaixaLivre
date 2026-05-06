@@ -3,8 +3,10 @@
   "version": "0.1.0",
   "type": "commonjs",
   "scripts": {
-    "dev": "node --watch src/server.js",
-    "start": "node src/server.js",
+    "dev:servidor": "node --watch src/server.js",
+    "dev:agente":   "node --watch src/agente.js",
+    "start:servidor": "node src/server.js",
+    "start:agente":   "node src/agente.js",
     "seed": "node src/seed.js"
   },
   "dependencies": {

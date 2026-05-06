@@ -7,7 +7,6 @@ const produtosRouter   = require('./routes/produtos')
 const contasRouter     = require('./routes/contas')
 const historicoRouter  = require('./routes/historico')
 const impressoraRouter = require('./routes/impressora')
-const balancaRouter    = require('./routes/balanca')
 const authRouter       = require('./routes/auth')
 
 const app  = express()
@@ -20,7 +19,6 @@ app.use('/api/produtos',   produtosRouter)
 app.use('/api/contas',     contasRouter)
 app.use('/api/historico',  historicoRouter)
 app.use('/api/impressora', impressoraRouter)
-app.use('/api/balanca',    balancaRouter)
 app.use('/api/auth',       authRouter)
 
 app.use((err, _req, res, _next) => {

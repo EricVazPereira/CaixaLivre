@@ -59,10 +59,17 @@ const ERP_SENHA = (cfgAPI['Senha'] || '123').trim()
 const ERP_AUTH  = 'Basic ' + Buffer.from(`${ERP_TOKEN}:${ERP_SENHA}`).toString('base64')
 
 // ── Seção [Servidor] ──────────────────────────────────────────────────────────
-const cfgServidor   = lerSecaoIni(INI_PATH, 'Servidor')
+const cfgServidor    = lerSecaoIni(INI_PATH, 'Servidor')
 const SERVIDOR_PORTA = parseInt(cfgServidor['Porta'] || '3001', 10) || 3001
+const SERVIDOR_URL   = (cfgServidor['Endereco'] || `http://localhost:${SERVIDOR_PORTA}`).trim()
 
-console.log(`[config] Servidor porta → ${SERVIDOR_PORTA}`)
+console.log(`[config] Servidor porta → ${SERVIDOR_PORTA} | URL → ${SERVIDOR_URL}`)
+
+// ── Seção [Agente] — processo local do totem (balança) ────────────────────────
+const cfgAgente  = lerSecaoIni(INI_PATH, 'Agente')
+const AGENTE_PORTA = parseInt(cfgAgente['Porta'] || '3002', 10) || 3002
+
+console.log(`[config] Agente porta → ${AGENTE_PORTA}`)
 
 // ── Exportações ───────────────────────────────────────────────────────────────
-module.exports = { ERP_HOST, ERP_PORT, ERP_HTTPS, API_ENDERECO, ERP_AUTH, SERVIDOR_PORTA }
+module.exports = { ERP_HOST, ERP_PORT, ERP_HTTPS, API_ENDERECO, ERP_AUTH, SERVIDOR_PORTA, SERVIDOR_URL, AGENTE_PORTA }
