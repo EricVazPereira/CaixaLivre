@@ -10,6 +10,18 @@ import {
 import { normalizarCodigo } from '../utils/barcode'
 import './OperacaoPage.css'
 
+const TOLERANCIA_PESO = 0.15        // 15%
+const ESPERA_UNITARIO_S  = 15       // segundos de espera para qty = 1
+const ESPERA_MULTIPLO_S  = 60       // segundos de espera para qty > 1
+const ESTAB_UNITARIO_MS  = 1000     // estabilidade para qty = 1
+const ESTAB_MULTIPLO_MS  = 5000     // estabilidade para qty > 1
+
+function calcularParamsBalanca(qtd) {
+  return qtd > 1
+    ? { esperaS: ESPERA_MULTIPLO_S, estabMs: ESTAB_MULTIPLO_MS }
+    : { esperaS: ESPERA_UNITARIO_S, estabMs: ESTAB_UNITARIO_MS }
+}
+
 export default function OperacaoPage() {
   const navigate = useNavigate()
 
@@ -102,8 +114,6 @@ export default function OperacaoPage() {
   }, [focarInput])
 
 
-  const TOLERANCIA_PESO = 0.15 // 15%
-
   // ── Registra produto no carrinho e no ERP ─────────────────────────────────
   function registrarProduto(produto) {
     const qtd = produto.quantidade || 1
@@ -112,12 +122,27 @@ export default function OperacaoPage() {
       id: erpSessionId.current,
       consumo: [{ produto_codigo: produto.codigo, quantidade: qtd, vl_unitario: produto.valor_unitario, obs: '' }],
     }).then(res => {
-      const itensERP = Array.isArray(res?.erp) ? res.erp : []
-      if (itensERP.length > 0 && itensERP[0].barcode) {
-        erpSessionId.current = itensERP[0].barcode
-        setErpBarcode(itensERP[0].barcode)
+      // ERP pode retornar array ou objeto, e o campo pode ser 'barcode' ou 'NRGERADOR'
+      const erp = res?.erp
+      let barcode = null
+      if (Array.isArray(erp) && erp.length > 0) {
+        barcode = erp[0].barcode ?? erp[0].NRGERADOR ?? erp[0].nrgerador ?? null
+      } else if (erp && typeof erp === 'object') {
+        barcode = erp.barcode ?? erp.NRGERADOR ?? erp.nrgerador ?? null
       }
-    }).catch(err => console.warn('[GravaItens] Erro:', err.message))
+      if (barcode) {
+        erpSessionId.current = String(barcode)
+        setErpBarcode(String(barcode))
+      } else {
+        console.warn('[GravaItens] Barcode não encontrado na resposta do ERP:', JSON.stringify(erp))
+      }
+    }).catch(err => {
+      // Não exibir erro ao usuário: o item pode ter sido gravado no ERP mesmo
+      // que a resposta HTTP tenha falhado (timeout, 502 transitório). O produto
+      // já está no carrinho via optimistic update — interromper o fluxo causaria
+      // mais problema do que o silêncio. Monitorar nos logs do servidor.
+      console.warn('[GravaItens] Falha na sincronização com ERP (item pode já estar gravado):', err.message)
+    })
   }
 
   // ── Countdown visual ──────────────────────────────────────────────────────
@@ -125,6 +150,21 @@ export default function OperacaoPage() {
     setterFn(segundos)
     const id = setInterval(() => setterFn(c => Math.max(0, c - 1)), 1000)
     return id
+  }
+
+  // ── Mede peso na balança com countdown e limpeza de estado ───────────────
+  async function medirComContagem(esperaS, estabMs, setModo) {
+    setModo(true)
+    const tick = iniciarContagem(esperaS, setContagemBalanca)
+    try {
+      return await medirPesoBalanca(esperaS * 1000, estabMs)
+    } catch {
+      return { ok: false, sem_comunicacao: true }
+    } finally {
+      clearInterval(tick)
+      setModo(false)
+      setContagemBalanca(0)
+    }
   }
 
   // ── Verifica total acumulado ───────────────────────────────────────────────
@@ -150,131 +190,59 @@ export default function OperacaoPage() {
       const produto = await buscarProduto(cod)
       if (!produto) { setErro(`Produto não encontrado: ${cod}`); return }
 
-      const qtd      = quantidadePendente
-      const ESPERA_S = qtd > 1 ? 60 : 15   // múltiplos itens têm mais tempo
-      const ESTAB_MS = qtd > 1 ? 5000 : 1000  // estabilidade: 5s para qty>1, 1s para qty=1
+      const qtd = quantidadePendente
+      const { esperaS, estabMs } = calcularParamsBalanca(qtd)
 
-      // ── Produto COM peso cadastrado: aguarda 8s de estabilidade e verifica ─
+      // ── Produto COM peso cadastrado: verifica delta na balança ────────────
       if (balancaHabilitada && produto.peso_gramas > 0) {
         setCarregando(false)
-        setVerificandoPeso(true)
-        const tick         = iniciarContagem(ESPERA_S, setContagemBalanca)
-        const deltaEsperado = produto.peso_gramas * qtd
-
-        let resultado
-        try {
-          resultado = await medirPesoBalanca(ESPERA_S * 1000, ESTAB_MS)
-        } catch {
-          resultado = { ok: false, sem_comunicacao: true }
-        } finally {
-          clearInterval(tick)
-          setVerificandoPeso(false)
-          setContagemBalanca(0)
-        }
+        const resultado = await medirComContagem(esperaS, estabMs, setVerificandoPeso)
 
         if (!resultado.ok) {
           setQuantidadePendente(1)
           if (resultado.sem_comunicacao) setErro('Falha de comunicação com a balança. Chame um atendente.')
-          // sem_peso → cliente não colocou → cancela silenciosamente
           return
         }
 
-        // Compara o delta medido com o esperado (±15%)
-        const deltaReal = resultado.peso_gramas
-        const diff      = Math.abs(deltaReal - deltaEsperado) / deltaEsperado
+        const deltaEsperado = produto.peso_gramas * qtd
+        const deltaReal     = resultado.peso_gramas
+        const diff          = Math.abs(deltaReal - deltaEsperado) / deltaEsperado
         console.log(`[balanca] delta medido=${deltaReal}g | esperado=${deltaEsperado}g | diff=${(diff * 100).toFixed(1)}%`)
 
+        setQuantidadePendente(1)
         if (diff <= TOLERANCIA_PESO) {
-          // ✅ Peso correto
-          const produtoFinal  = { ...produto, quantidade: qtd }
-          const totalEsperado = itens.reduce((s, it) => s + (it.peso_gramas || 0) * it.quantidade, 0)
-                              + produto.peso_gramas * qtd
-          setQuantidadePendente(1)
-          registrarProduto(produtoFinal)
+          const totalEsperado = itens.reduce((s, it) => s + (it.peso_gramas || 0) * it.quantidade, 0) + deltaEsperado
+          registrarProduto({ ...produto, quantidade: qtd })
           checarTotalAcumulado(resultado.peso_absoluto, totalEsperado)
         } else {
-          // ❌ Divergência → solicita gerente
           setProdutoPendente({ ...produto, quantidade: qtd })
           setModalLiberacao(true)
-          setQuantidadePendente(1)
         }
         return
       }
 
-      // ── Produto SEM peso cadastrado ──────────────────────────────────────
+      // ── Produto SEM peso cadastrado: aprende pela balança ─────────────────
       if (balancaHabilitada) {
-
-        // qty > 1: aguarda 8s de estabilidade, aprende peso unitário e só então registra
-        if (qtd > 1) {
-          setCarregando(false)
-          setAprendendoPeso(true)
-          const tick = iniciarContagem(ESPERA_S, setContagemBalanca)
-
-          let res2
-          try {
-            res2 = await medirPesoBalanca(ESPERA_S * 1000, ESTAB_MS)
-          } catch {
-            res2 = { ok: false, sem_comunicacao: true }
-          } finally {
-            clearInterval(tick)
-            setAprendendoPeso(false)
-            setContagemBalanca(0)
-          }
-
-          if (!res2.ok) {
-            setQuantidadePendente(1)
-            if (res2.sem_comunicacao) setErro('Falha de comunicação com a balança. Chame um atendente.')
-            return
-          }
-
-          const pesoUnitario  = Math.round(res2.peso_gramas / qtd)
-          const produtoFinal  = { ...produto, quantidade: qtd, peso_gramas: pesoUnitario }
-          const totalEsperado = itens.reduce((s, it) => s + (it.peso_gramas || 0) * it.quantidade, 0)
-                              + res2.peso_gramas
-          setQuantidadePendente(1)
-          registrarProduto(produtoFinal)
-          salvarFormatoPro(produto.codigo, pesoUnitario)
-            .then(ok => console.log(`[balanca] ${ok ? '✅' : '⚠️'} FORMATO_PRO ${produto.codigo} → ${pesoUnitario}g (${qtd}×)`))
-          checarTotalAcumulado(res2.peso_absoluto, totalEsperado)
-          return
-        }
-
-        // qty = 1: aguarda colocação com stability (60 s)
         setCarregando(false)
-        setAprendendoPeso(true)
-        const tick = iniciarContagem(ESPERA_S, setContagemBalanca)
-
-        let resultado
-        try {
-          resultado = await medirPesoBalanca(ESPERA_S * 1000, ESTAB_MS)
-        } catch {
-          resultado = { ok: false, sem_comunicacao: true }
-        } finally {
-          clearInterval(tick)
-          setAprendendoPeso(false)
-          setContagemBalanca(0)
-        }
+        const resultado = await medirComContagem(esperaS, estabMs, setAprendendoPeso)
 
         if (!resultado.ok) {
           setQuantidadePendente(1)
           if (resultado.sem_comunicacao) setErro('Falha de comunicação com a balança. Chame um atendente.')
-          // sem_peso → cliente não colocou → cancela silenciosamente
           return
         }
 
-        // Aprendeu o peso → grava FORMATO_PRO e adiciona ao carrinho
-        const produtoFinal  = { ...produto, quantidade: 1, peso_gramas: resultado.peso_gramas }
-        const totalEsperado = itens.reduce((s, it) => s + (it.peso_gramas || 0) * it.quantidade, 0)
-                            + resultado.peso_gramas
+        const pesoUnitario  = Math.round(resultado.peso_gramas / qtd)
+        const totalEsperado = itens.reduce((s, it) => s + (it.peso_gramas || 0) * it.quantidade, 0) + resultado.peso_gramas
         setQuantidadePendente(1)
-        registrarProduto(produtoFinal)
-        salvarFormatoPro(produto.codigo, resultado.peso_gramas)
-          .then(ok => console.log(`[balanca] ${ok ? '✅' : '⚠️'} FORMATO_PRO ${produto.codigo} → ${resultado.peso_gramas}g`))
+        registrarProduto({ ...produto, quantidade: qtd, peso_gramas: pesoUnitario })
+        salvarFormatoPro(produto.codigo, pesoUnitario)
+          .then(ok => console.log(`[balanca] ${ok ? '✅' : '⚠️'} FORMATO_PRO ${produto.codigo} → ${pesoUnitario}g (${qtd}×)`))
         checarTotalAcumulado(resultado.peso_absoluto, totalEsperado)
         return
       }
 
-      // ── Balança desabilitada ─────────────────────────────────────────────
+      // ── Balança desabilitada ──────────────────────────────────────────────
       setQuantidadePendente(1)
       registrarProduto({ ...produto, quantidade: qtd })
 
@@ -291,6 +259,13 @@ export default function OperacaoPage() {
   // ── Pagamento ─────────────────────────────────────────────────────────────
   async function handlePagamento() {
     if (itens.length === 0) { setErro('Nenhum produto adicionado.'); return }
+
+    // erpBarcode vazio significa que nenhum GravaItens teve resposta do ERP —
+    // o fecharComanda iria falhar com "barcode é obrigatório". Bloquear aqui.
+    if (!erpBarcode) {
+      setErro('Falha na sincronização com o sistema. Chame um atendente.')
+      return
+    }
 
     if (balancaHabilitada) {
       const totalEsperado = itens.reduce((s, it) => s + (it.peso_gramas || 0) * it.quantidade, 0)
@@ -316,7 +291,7 @@ export default function OperacaoPage() {
   }
 
   // ── Gerente ───────────────────────────────────────────────────────────────
-  const PIN_KEYS = ['1','2','3','4','5','6','7','8','9','','0','⌫']
+  const PIN_KEYS = ['7','8','9','4','5','6','1','2','3','','0','⌫']
 
   async function handleLiberarConta() {
     if (!pinLiberacao) { setErroPin('Digite o código do gerente.'); return }
@@ -393,17 +368,7 @@ export default function OperacaoPage() {
 
   function handleAdicionarProduto() {
     if (!produtoEncontrado) return
-    adicionarItem(produtoEncontrado)
-    gravarItens({
-      id: erpSessionId.current,
-      consumo: [{ produto_codigo: produtoEncontrado.codigo, quantidade: 1, vl_unitario: produtoEncontrado.valor_unitario, obs: '' }],
-    }).then(res => {
-      const itensERP = Array.isArray(res?.erp) ? res.erp : []
-      if (itensERP.length > 0 && itensERP[0].barcode) {
-        erpSessionId.current = itensERP[0].barcode
-        setErpBarcode(itensERP[0].barcode)
-      }
-    }).catch(err => console.warn('[GravaItens] Erro:', err.message))
+    registrarProduto({ ...produtoEncontrado, quantidade: 1 })
     setModalBusca(false)
     focarInput(80)
   }
@@ -450,14 +415,14 @@ export default function OperacaoPage() {
 
             <button
               type="button"
-              className="btn-fenix btn-dark"
+              className="btn-fenix btn-dark btn-modal"
+              style={{ width: '100%' }}
               onClick={() => {
                 setModoPassarProduto(false)
                 setQuantidadePendente(1)
                 setCodigo('')
                 focarInput(80)
               }}
-              style={{ height: '56px', fontSize: '0.8rem', borderRadius: '14px', width: '100%' }}
             >
               <iconify-icon icon="tabler:x" />
               Cancelar
@@ -467,17 +432,17 @@ export default function OperacaoPage() {
         </div>
       )}
 
-      {/* ── Modal: Liberação por gerente ── */}
+      {/* ── Overlay: Liberação por gerente ── */}
       {modalLiberacao && (
-        <div className="modal-overlay modal-overlay--alerta">
-          <div className="modal-card modal-liberacao-card" onClick={e => e.stopPropagation()}>
+        <div className="instrucao-overlay instrucao-overlay--liberacao">
+          <div className="instrucao-painel">
 
-            <div className="modal-liberacao-icon">
+            <div className="instrucao-icone instrucao-icone--liberacao">
               <iconify-icon icon="tabler:alert-triangle" />
             </div>
 
-            <h2 className="modal-liberacao-titulo">Problema na conferência dos itens</h2>
-            <p className="modal-liberacao-desc">Chame um gerente para liberar esta operação.</p>
+            <h2 className="instrucao-titulo">Confirmação do gerente</h2>
+            <p className="instrucao-sub">Chame um gerente para liberar esta operação.</p>
 
             <div className="liberacao-pin-display">
               {pinLiberacao.length === 0
@@ -513,23 +478,21 @@ export default function OperacaoPage() {
               </div>
             )}
 
-            <div className="autorizacao-btns" style={{ marginTop: '1rem' }}>
+            <div className="autorizacao-btns">
               <button
                 type="button"
-                className="btn-fenix btn-dark"
+                className="btn-fenix btn-dark btn-modal"
                 onClick={fecharModalLiberacao}
                 disabled={validandoPin}
-                style={{ height: '64px', fontSize: '0.75rem', flex: 1, borderRadius: '14px' }}
               >
                 <iconify-icon icon="tabler:arrow-left" />
                 Cancelar
               </button>
               <button
                 type="button"
-                className="btn-fenix btn-orange"
+                className="btn-fenix btn-orange btn-modal"
                 onClick={handleLiberarConta}
                 disabled={!pinLiberacao || validandoPin}
-                style={{ height: '64px', fontSize: '0.75rem', flex: 2, borderRadius: '14px' }}
               >
                 <iconify-icon icon="tabler:shield-check" />
                 {validandoPin ? 'Validando…' : 'Liberar'}
@@ -540,27 +503,28 @@ export default function OperacaoPage() {
         </div>
       )}
 
-      {/* ── Modal: Divergência no peso total ── */}
+      {/* ── Overlay: Divergência no peso total ── */}
       {modalPesoTotal && (
-        <div className="modal-overlay modal-overlay--alerta">
-          <div className="modal-card" style={{ maxWidth: '420px', textAlign: 'center', gap: '1.25rem' }} onClick={e => e.stopPropagation()}>
+        <div className="instrucao-overlay instrucao-overlay--alerta">
+          <div className="instrucao-painel">
 
-            <div className="modal-peso-total-icon">
+            <div className="instrucao-icone instrucao-icone--alerta">
               <iconify-icon icon="tabler:scale-off" />
             </div>
 
-            <h2 className="modal-peso-total-titulo">Atenção! Algo não confere</h2>
-            <p className="modal-peso-total-desc">
-              Algum produto pode estar faltando ou a mais. Confira a lista e tente novamente.
+            <h2 className="instrucao-titulo">Algo não confere</h2>
+
+            <p className="instrucao-sub">
+              Algum produto pode estar faltando ou a mais.<br />
+              Confira a lista e tente novamente.
             </p>
 
             <button
               type="button"
-              className="btn-fenix btn-dark"
+              className="btn-fenix btn-red"
               onClick={() => { setModalPesoTotal(false); focarInput(80) }}
-              style={{ height: '64px', fontSize: '0.9rem', borderRadius: '16px', width: '100%' }}
             >
-              <iconify-icon icon="tabler:arrow-left" style={{ fontSize: '1.3rem' }} />
+              <iconify-icon icon="tabler:arrow-left" style={{ fontSize: '1.5rem' }} />
               Voltar e verificar
             </button>
 
@@ -585,7 +549,7 @@ export default function OperacaoPage() {
 
             <div className="liberacao-numpad">
               <div className="numpad-grid">
-                {['1','2','3','4','5','6','7','8','9','','0','⌫'].map((key, i) => (
+                {['7','8','9','4','5','6','1','2','3','','0','⌫'].map((key, i) => (
                   key === '' ? <div key={i} /> :
                   <button
                     key={key + i}
@@ -602,19 +566,18 @@ export default function OperacaoPage() {
               </div>
             </div>
 
-            <div className="autorizacao-btns" style={{ marginTop: '0.5rem' }}>
+            <div className="autorizacao-btns">
               <button
                 type="button"
-                className="btn-fenix btn-dark"
+                className="btn-fenix btn-dark btn-modal"
                 onClick={() => { setModalQuantidade(false); setDigQuantidade('') }}
-                style={{ height: '64px', fontSize: '0.75rem', flex: 1, borderRadius: '14px' }}
               >
                 <iconify-icon icon="tabler:x" />
                 Cancelar
               </button>
               <button
                 type="button"
-                className="btn-fenix btn-blue"
+                className="btn-fenix btn-blue btn-modal"
                 disabled={!digQuantidade || parseInt(digQuantidade) < 1}
                 onClick={() => {
                   const q = Math.max(1, parseInt(digQuantidade) || 1)
@@ -627,7 +590,6 @@ export default function OperacaoPage() {
                     focarInput(80)
                   }
                 }}
-                style={{ height: '64px', fontSize: '0.75rem', flex: 2, borderRadius: '14px' }}
               >
                 <iconify-icon icon="tabler:check" />
                 Confirmar
@@ -663,9 +625,8 @@ export default function OperacaoPage() {
               />
               <button
                 type="submit"
-                className="btn-fenix btn-dark"
+                className="btn-fenix btn-dark btn-modal--sm"
                 disabled={buscando || !codigoBusca}
-                style={{ height: '52px', fontSize: '0.75rem', borderRadius: '12px' }}
               >
                 <iconify-icon icon="tabler:search" style={{ fontSize: '0.9rem' }} />
                 {buscando ? 'Buscando…' : 'Buscar'}
@@ -689,12 +650,12 @@ export default function OperacaoPage() {
             )}
 
             <div className="modal-acoes">
-              <button type="button" className="btn-fenix btn-dark" style={{ height: '64px', fontSize: '0.75rem' }} onClick={() => setModalBusca(false)}>
+              <button type="button" className="btn-fenix btn-dark btn-modal" onClick={() => setModalBusca(false)}>
                 <iconify-icon icon="tabler:arrow-left" />
                 Voltar
               </button>
               {produtoEncontrado && (
-                <button type="button" className="btn-fenix btn-green" style={{ height: '64px', fontSize: '0.75rem' }} onClick={handleAdicionarProduto}>
+                <button type="button" className="btn-fenix btn-green btn-modal" onClick={handleAdicionarProduto}>
                   <iconify-icon icon="tabler:circle-plus" />
                   Adicionar à compra
                 </button>
@@ -705,9 +666,77 @@ export default function OperacaoPage() {
         </div>
       )}
 
+      {/* ── Overlay: Verificando / Aprendendo peso na balança ── */}
+      {(verificandoPeso || aprendendoPeso) && (
+        <div className={`instrucao-overlay instrucao-overlay--${verificandoPeso ? 'verificar' : 'aprender'}`}>
+          <div className="instrucao-painel">
+
+            <div className={`instrucao-icone instrucao-icone--${verificandoPeso ? 'verificar' : 'aprender'}`}>
+              <iconify-icon icon={verificandoPeso ? 'tabler:scale' : 'tabler:scale-outline'} />
+            </div>
+
+            <h2 className="instrucao-titulo">
+              {aprendendoPeso && quantidadePendente > 1
+                ? `Coloque os ${quantidadePendente} itens no balcão`
+                : 'Coloque o produto no balcão'}
+            </h2>
+
+            <p className="instrucao-sub">
+              {verificandoPeso
+                ? 'Aguardando a balança confirmar o peso do produto'
+                : 'A balança vai registrar o peso automaticamente'}
+            </p>
+
+            <div className="instrucao-countdown">
+              <span className={`instrucao-countdown-num instrucao-countdown-num--${verificandoPeso ? 'verificar' : 'aprender'}`}>
+                {contagemBalanca}
+              </span>
+              <span className="instrucao-countdown-s">s</span>
+            </div>
+
+            <div className="instrucao-progresso-track">
+              <div
+                className={`instrucao-progresso-bar instrucao-progresso-bar--${verificandoPeso ? 'verificar' : 'aprender'}`}
+                style={{ width: `${(contagemBalanca / calcularParamsBalanca(quantidadePendente).esperaS) * 100}%` }}
+              />
+            </div>
+
+          </div>
+        </div>
+      )}
+
+      {/* ── Overlay: Verificando peso total antes do pagamento ── */}
+      {verificandoTotal && (
+        <div className="instrucao-overlay instrucao-overlay--total">
+          <div className="instrucao-painel">
+
+            <div className="instrucao-icone instrucao-icone--total">
+              <iconify-icon icon="tabler:scale" />
+            </div>
+
+            <h2 className="instrucao-titulo">Verificando o peso total</h2>
+
+            <p className="instrucao-sub">
+              Aguarde enquanto confirmamos todos os itens da compra
+            </p>
+
+            <div className="instrucao-spinner">
+              <iconify-icon icon="tabler:loader-2" class="spin" style={{ fontSize: '1.5rem', color: 'var(--fenix-blue)' }} />
+              Verificando…
+            </div>
+
+          </div>
+        </div>
+      )}
+
       {/* ── Header ── */}
       <header className="operacao-header reveal d-1 active">
-        <button className="btn-voltar" onClick={() => navigate('/inicio')}>
+        <button
+          className="btn-voltar"
+          onClick={() => navigate('/inicio')}
+          disabled={itens.length > 0}
+          title={itens.length > 0 ? 'Cancele a conta antes de voltar' : undefined}
+        >
           <iconify-icon icon="tabler:arrow-left" style={{ fontSize: '1rem' }} />
           Voltar
         </button>
@@ -735,11 +764,17 @@ export default function OperacaoPage() {
           <div className="lista-itens">
             {itens.length === 0 ? (
               <div className="lista-vazia">
-                <iconify-icon icon="tabler:barcode" />
+                <div className="lista-vazia-icon-wrap">
+                  <div className="lista-vazia-icon-circle">
+                    <iconify-icon icon="tabler:barcode" />
+                    <div className="lista-vazia-scan-beam" />
+                  </div>
+                </div>
                 <span className="lista-vazia-txt">Passe o produto no leitor</span>
+                <span className="lista-vazia-sub">Código de barras ou busca manual</span>
               </div>
             ) : (
-              itens.map(item => (
+              itens.map((item, index) => (
                 <div
                   key={item.id}
                   className={[
@@ -747,6 +782,7 @@ export default function OperacaoPage() {
                     itemSelecionado === item.id ? 'item-selecionado' : '',
                     modoExclusao ? 'item-modo-exclusao' : '',
                   ].join(' ')}
+                  style={{ animationDelay: `${index * 0.04}s` }}
                   onClick={() => handleItemClick(item.id)}
                 >
                   <span className="item-nome">{item.descricao}</span>
@@ -759,7 +795,14 @@ export default function OperacaoPage() {
           </div>
 
           <div className="subtotal-bar">
-            <span className="subtotal-label">Total da compra</span>
+            <div className="subtotal-info">
+              <span className="subtotal-label">Total da compra</span>
+              {itens.length > 0 && (
+                <span className="subtotal-count">
+                  {itens.length} {itens.length === 1 ? 'item' : 'itens'}
+                </span>
+              )}
+            </div>
             <span className="subtotal-valor">R$ {total.toFixed(2)}</span>
           </div>
         </div>
@@ -768,11 +811,24 @@ export default function OperacaoPage() {
         <aside className="controles-col reveal-blur d-3 active">
 
           {/* Barcode form */}
-          <form onSubmit={handleCodigoSubmit} className="barcode-card">
-            <span className="barcode-label label-mono">
-              <iconify-icon icon="tabler:barcode" style={{ fontSize: '0.9rem', marginRight: '0.3rem' }} />
-              Código de barras
-            </span>
+          <form onSubmit={handleCodigoSubmit} className={`barcode-card${carregando ? ' barcode-card--carregando' : ''}`}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <span className="barcode-label label-mono">
+                <iconify-icon icon="tabler:barcode" style={{ fontSize: '0.9rem', marginRight: '0.3rem' }} />
+                Leitor
+              </span>
+              {carregando ? (
+                <span className={`barcode-terminal-status barcode-terminal-status--busy`}>
+                  <iconify-icon icon="tabler:loader-2" class="spin" style={{ fontSize: '0.8rem' }} />
+                  Buscando…
+                </span>
+              ) : (
+                <span className="barcode-terminal-status">
+                  <span className="pulse-dot" style={{ width: '6px', height: '6px' }} />
+                  Pronto
+                </span>
+              )}
+            </div>
             <input
               ref={inputRef}
               type="text"
@@ -783,30 +839,35 @@ export default function OperacaoPage() {
               autoComplete="off"
               disabled={carregando || verificandoPeso || aprendendoPeso || modoPassarProduto}
             />
-            <div style={{ display: 'flex', gap: '0.5rem' }}>
-              <button
-                type="button"
-                className="btn-fenix btn-dark"
-                onClick={() => setModalBusca(true)}
-                style={{ height: '52px', fontSize: '0.75rem', flex: 1, padding: '0 1rem', borderRadius: '12px' }}
-              >
-                <iconify-icon icon="tabler:search" style={{ fontSize: '0.9rem' }} />
-                Buscar
-              </button>
-              <button
-                type="button"
-                className={`btn-fenix ${quantidadePendente > 1 ? 'btn-blue' : 'btn-dark'}`}
-                onClick={() => {
-                  setDigQuantidade(quantidadePendente > 1 ? String(quantidadePendente) : '')
-                  setModalQuantidade(true)
-                }}
-                style={{ height: '52px', fontSize: '0.75rem', flex: 1, padding: '0 1rem', borderRadius: '12px', fontWeight: quantidadePendente > 1 ? 700 : 400 }}
-              >
-                <iconify-icon icon="tabler:packages" style={{ fontSize: '0.9rem' }} />
-                {quantidadePendente > 1 ? `${quantidadePendente}×` : 'Qtd'}
-              </button>
-            </div>
+            <button
+              type="button"
+              className="btn-fenix btn-dark btn-barcode-action"
+              style={{ width: '100%' }}
+              onClick={() => setModalBusca(true)}
+            >
+              <iconify-icon icon="tabler:search" style={{ fontSize: '0.9rem' }} />
+              Buscar produto
+            </button>
           </form>
+
+          {/* Qtd — centralizado no espaço livre entre o card e os botões de ação */}
+          <div style={{ flex: 1, display: 'flex', alignItems: 'center' }}>
+          <button
+            type="button"
+            className={`btn-fenix btn-barcode-action ${quantidadePendente > 1 ? 'btn-blue' : 'btn-dark'}`}
+            style={{ width: '100%', fontWeight: quantidadePendente > 1 ? 700 : undefined }}
+            onClick={() => {
+              setDigQuantidade(quantidadePendente > 1 ? String(quantidadePendente) : '')
+              setModalQuantidade(true)
+            }}
+          >
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg" style={{ flexShrink: 0 }}>
+              <rect x="3" y="10" width="18" height="4" rx="2"/>
+              <rect x="10" y="3" width="4" height="18" rx="2"/>
+            </svg>
+            {quantidadePendente > 1 ? `${quantidadePendente}× Quantidade` : 'Quantidade'}
+          </button>
+          </div>
 
           {/* Aviso modo exclusão */}
           {modoExclusao && (
@@ -816,31 +877,7 @@ export default function OperacaoPage() {
             </div>
           )}
 
-          {/* Aguardando produto na balança (verificando peso cadastrado) */}
-          {verificandoPeso && (
-            <div className="aviso-balanca aviso-balanca--verificar reveal active">
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', width: '100%' }}>
-                <iconify-icon icon="tabler:scale" style={{ fontSize: '1.1rem' }} />
-                <span>Coloque o produto no balcão…</span>
-                <span style={{ marginLeft: 'auto', fontFamily: 'var(--font-mono)', fontWeight: 700 }}>{contagemBalanca}s</span>
-              </div>
-            </div>
-          )}
-
-          {/* Aprendendo peso — qty=1 ou qty>1 sem FORMATO_PRO */}
-          {aprendendoPeso && (
-            <div className="aviso-balanca aviso-balanca--aprender reveal active">
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', width: '100%' }}>
-                <iconify-icon icon="tabler:scale-outline" style={{ fontSize: '1.1rem' }} />
-                <span>
-                  {quantidadePendente > 1
-                    ? `Coloque os ${quantidadePendente} itens no balcão…`
-                    : 'Coloque o produto no balcão…'}
-                </span>
-                <span style={{ marginLeft: 'auto', fontFamily: 'var(--font-mono)', fontWeight: 700 }}>{contagemBalanca}s</span>
-              </div>
-            </div>
-          )}
+          {/* Balança: instrução exibida via overlay de tela cheia (acima) */}
 
           {/* Erro */}
           {erro && (
@@ -853,32 +890,34 @@ export default function OperacaoPage() {
           {/* Botões de ação */}
           <div className="botoes-acao">
             <button
-              className="btn-fenix btn-red"
+              className="btn-fenix btn-red btn-acao"
               onClick={() => navigate('/autorizacao?acao=cancelar-conta')}
               disabled={itens.length === 0}
-              style={{ height: '80px', fontSize: '0.9rem', borderRadius: '16px' }}
             >
               <iconify-icon icon="tabler:circle-x" style={{ fontSize: '1.5rem' }} />
               Cancelar conta
             </button>
 
             <button
-              className="btn-fenix btn-orange"
+              className={`btn-fenix btn-orange btn-acao${modoExclusao ? ' btn-acao--pulsing' : ''}`}
               onClick={handleCancelarItemClick}
               disabled={itens.length === 0}
-              style={{ height: '80px', fontSize: '0.9rem', borderRadius: '16px', boxShadow: modoExclusao ? '0 0 0 3px rgba(200,113,11,0.4), 0px 7px 20px rgba(200,113,11,0.35)' : '0px 7px 20px rgba(200,113,11,0.35)' }}
+              style={modoExclusao ? { boxShadow: '0 0 0 3px rgba(200,113,11,0.4), 0px 7px 20px rgba(200,113,11,0.35)' } : undefined}
             >
               <iconify-icon icon="tabler:trash" style={{ fontSize: '1.5rem' }} />
               {modoExclusao ? 'Selecione um item…' : 'Cancelar item'}
             </button>
 
             <button
-              className="btn-fenix btn-green"
+              className="btn-fenix btn-green btn-acao--primary"
               onClick={handlePagamento}
               disabled={itens.length === 0 || verificandoTotal}
-              style={{ height: '80px', fontSize: '0.9rem', borderRadius: '16px', gridColumn: 'span 2' }}
+              aria-busy={verificandoTotal}
             >
-              <iconify-icon icon="tabler:credit-card" style={{ fontSize: '1.5rem' }} />
+              {verificandoTotal
+                ? <iconify-icon icon="tabler:loader-2" class="spin" />
+                : <iconify-icon icon="tabler:credit-card" />
+              }
               {verificandoTotal ? 'Verificando…' : 'Pagamento'}
             </button>
           </div>

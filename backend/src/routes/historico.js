@@ -3,6 +3,18 @@ const router  = express.Router()
 const { query } = require('../db')
 const { NM_ESTACAO, verificarCaixaAberto, abrirCaixaERP, gravarItensERP, fecharComandaERP, fecharCaixaERP } = require('../erp')
 
+// ── Helpers ──────────────────────────────────────────────────────────────────
+
+async function buscarIdHistorico(nmEstacao) {
+  const rows = await query(
+    `SELECT FIRST 1 ID_HISTORICO FROM HISTORICO
+      WHERE NM_ESTACAO = ?
+      ORDER BY ID_HISTORICO DESC`,
+    [nmEstacao]
+  )
+  return rows.length ? rows[0]['ID_HISTORICO'] : null
+}
+
 // ── GET /status — verifica se o caixa está aberto via ERP ───────────────────
 
 router.get('/status', async (req, res) => {
@@ -21,15 +33,8 @@ router.get('/status', async (req, res) => {
   let id_historico = null
   if (aberto) {
     try {
-      const rows = await query(
-        `SELECT FIRST 1 ID_HISTORICO FROM HISTORICO
-          WHERE NM_ESTACAO = ?
-          ORDER BY ID_HISTORICO DESC`,
-        [nm_estacao]
-      )
-      if (rows.length) {
-        id_historico = rows[0]['ID_HISTORICO']
-      } else {
+      id_historico = await buscarIdHistorico(nm_estacao)
+      if (!id_historico) {
         console.warn('[historico] GET /status — ERP aberto mas sem HISTORICO no banco')
         aberto = false
       }
@@ -57,13 +62,7 @@ router.post('/abrir-erp', async (req, res) => {
     console.log('[abrir-erp] VerficaCxAberto após abertura:', confirmacao.aberto ? 'ABERTO ✓' : 'FECHADO ✗')
 
     // Lê o HISTORICO criado pelo ERP
-    const rows = await query(
-      `SELECT FIRST 1 ID_HISTORICO FROM HISTORICO
-        WHERE NM_ESTACAO = ?
-        ORDER BY ID_HISTORICO DESC`,
-      [NM_ESTACAO]
-    )
-    const id_historico = rows.length ? rows[0]['ID_HISTORICO'] : null
+    const id_historico = await buscarIdHistorico(NM_ESTACAO)
     if (!id_historico) {
       throw new Error('ERP processou a abertura mas nenhum HISTORICO foi encontrado no banco para a estação ' + NM_ESTACAO)
     }
@@ -117,10 +116,23 @@ router.post('/fechar-comanda', async (req, res) => {
   try {
     const erpResult = await fecharComandaERP({ subtotal, total, barcode, discount, cpf, add_service, operadora })
     console.log('[FechamentoComandaSmartPDV] Resposta do ERP:', JSON.stringify(erpResult))
+
+    // DataSnap pode retornar HTTP 200 com um objeto indicando erro no campo message_sucess/ErrorMessage
+    const erpMsg = erpResult?.message_sucess ?? erpResult?.ErrorMessage ?? null
+    const erpOk  = erpResult?.sucess !== false && !erpResult?.ErrorCode
+
+    if (!erpOk && erpMsg) {
+      console.warn('[FechamentoComandaSmartPDV] ERP retornou erro lógico:', erpMsg)
+      return res.status(502).json({ erro: erpMsg })
+    }
+
     return res.json({ ok: true, erp: erpResult })
   } catch (err) {
-    console.error('[FechamentoComandaSmartPDV] Erro:', err.message)
-    res.status(502).json({ erro: err.message })
+    // Garante que o campo erro nunca seja vazio, mesmo se err não for um Error padrão
+    const msg = (err instanceof Error ? err.message : String(err)) || 'Erro desconhecido no fechamento da comanda'
+    console.error('[FechamentoComandaSmartPDV] Erro:', msg)
+    if (err?.stack) console.error(err.stack)
+    res.status(502).json({ erro: msg })
   }
 })
 

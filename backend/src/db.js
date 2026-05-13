@@ -1,13 +1,14 @@
 const Firebird = require('node-firebird');
+const { DB_HOST, DB_DATABASE, DB_USER, DB_PASSWORD } = require('./config');
 
 const options = {
-  host:          'localhost',
-  port:          3050,
-  database:      'C:/fenix/bd/ORESTRA.FDB',
-  user:          'SYSDBA',
-  password:      'qpalzm',
+  host:           DB_HOST,
+  port:           3050,
+  database:       DB_DATABASE,
+  user:           DB_USER,
+  password:       DB_PASSWORD,
   lowercase_keys: false,
-  pageSize:      4096,
+  pageSize:       4096,
 };
 
 // Pool de até 5 conexões simultâneas

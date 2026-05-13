@@ -18,25 +18,36 @@
   animation: float-orb 9s ease-in-out infinite;
 }
 .cpf-orb-1 {
-  width: 400px; height: 400px;
-  background: radial-gradient(circle, rgba(0,139,195,0.07) 0%, transparent 70%);
-  top: -10%; right: -5%; filter: blur(50px);
+  width: 560px; height: 560px;
+  background: radial-gradient(circle, rgba(0,139,195,0.10) 0%, transparent 68%);
+  top: -15%; right: -10%; filter: blur(60px);
 }
 .cpf-orb-2 {
-  width: 300px; height: 300px;
-  background: radial-gradient(circle, rgba(61,61,61,0.06) 0%, transparent 70%);
-  bottom: -8%; left: 5%; filter: blur(60px);
-  animation-duration: 12s; animation-direction: reverse;
+  width: 420px; height: 420px;
+  background: radial-gradient(circle, rgba(0,139,195,0.06) 0%, transparent 68%);
+  bottom: -12%; left: -5%; filter: blur(70px);
+  animation-duration: 13s; animation-direction: reverse;
+}
+
+/* Card — entrada orquestrada dos filhos */
+@keyframes cpf-child-up {
+  from { opacity: 0; transform: translateY(22px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes cpf-icon-in {
+  from { opacity: 0; transform: scale(0.70); }
+  to   { opacity: 1; transform: scale(1); }
 }
 
 .cpf-card {
   background: var(--bg-panel);
-  border-radius: var(--radius-lg);
+  border-radius: 24px;
   padding: 3rem 3.5rem;
   width: 100%;
   max-width: 460px;
-  box-shadow: var(--shadow-xl);
+  box-shadow: 0 24px 80px rgba(0,0,0,0.12), var(--shadow-xl);
   border: 1px solid rgba(0,139,195,0.10);
+  border-top: 4px solid var(--fenix-blue);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -45,17 +56,40 @@
   z-index: 1;
 }
 
+/* Stagger filhos do card */
+.cpf-card > *:nth-child(1) { animation: cpf-icon-in  0.50s cubic-bezier(0.16,1,0.3,1) 0.05s both; }
+.cpf-card > *:nth-child(2) { animation: cpf-child-up 0.52s cubic-bezier(0.16,1,0.3,1) 0.15s both; }
+.cpf-card > *:nth-child(3) { animation: cpf-child-up 0.50s cubic-bezier(0.16,1,0.3,1) 0.24s both; }
+.cpf-card > *:nth-child(4) { animation: cpf-child-up 0.48s cubic-bezier(0.16,1,0.3,1) 0.32s both; }
+.cpf-card > *:nth-child(5) { animation: cpf-child-up 0.46s cubic-bezier(0.16,1,0.3,1) 0.40s both; }
+
+/* Ícone — layered glow igual ao overlay de instrução */
 .cpf-icon-wrap {
-  width: 72px; height: 72px;
+  width: 104px; height: 104px;
   border-radius: 50%;
   background: rgba(0,139,195,0.08);
+  box-shadow: 0 0 0 18px rgba(0,139,195,0.05), 0 8px 32px rgba(0,139,195,0.16);
   display: flex; align-items: center; justify-content: center;
-  font-size: 2.2rem; color: var(--fenix-blue);
+  font-size: 3rem; color: var(--fenix-blue);
 }
 
+/* Título — arquitetônico, lê-se de longe */
 .cpf-title {
-  font-size: 1.75rem; font-weight: 800;
-  letter-spacing: -0.04em; color: var(--ink-primary); text-align: center;
+  font-size: 2.5rem;
+  font-weight: 800;
+  letter-spacing: -0.05em;
+  color: var(--ink-primary);
+  text-align: center;
+  line-height: 1.1;
+}
+
+/* Subtítulo contextual */
+.cpf-desc {
+  font-size: 0.95rem;
+  color: var(--ink-muted);
+  text-align: center;
+  line-height: 1.65;
+  max-width: 28ch;
 }
 
 .cpf-desc {
@@ -65,23 +99,27 @@
 
 .cpf-btns { width: 100%; display: flex; flex-direction: column; gap: 0.75rem; }
 
-/* CPF formatted display */
+/* CPF formatted display — número grande, leitura imediata */
 .cpf-display-formatted {
   width: 100%;
   background: var(--bg-subtle);
   border: 2px solid rgba(0,139,195,0.15);
   border-radius: var(--radius-md);
-  padding: 1rem 1.5rem;
+  padding: 1.1rem 1.5rem;
   font-family: 'JetBrains Mono', monospace;
-  font-size: 1.6rem; font-weight: 600; letter-spacing: 0.12em;
-  color: var(--ink-primary); text-align: center;
-  min-height: 68px;
+  font-size: 1.85rem;
+  font-weight: 600;
+  letter-spacing: 0.10em;
+  color: var(--ink-primary);
+  text-align: center;
+  min-height: 72px;
   display: flex; align-items: center; justify-content: center;
-  transition: border-color 0.2s, box-shadow 0.2s;
+  transition: border-color 0.25s, box-shadow 0.25s, background 0.25s;
 }
 .cpf-display--active {
   border-color: var(--fenix-blue);
-  box-shadow: 0 0 0 3px rgba(0,139,195,0.10);
+  background: var(--bg-panel);
+  box-shadow: 0 0 0 4px rgba(0,139,195,0.10);
 }
 
 /* Numpad — herda o estilo Apple definido em AutorizacaoPage.css */

@@ -96,7 +96,7 @@
 
 .numpad-key {
   aspect-ratio: 1;
-  border-radius: 50%;
+  border-radius: 16px;
   border: none;
   background: var(--bg-subtle);
   font-family: 'Montserrat', sans-serif;

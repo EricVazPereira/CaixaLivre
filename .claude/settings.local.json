@@ -51,7 +51,27 @@
       "Bash(pkill -9 -f \"server.js\" pkill -9 -f \"node src\" sleep 2)",
       "Bash(pkill -9 -f server)",
       "Bash(curl -s -u TOKEN_AUTENTICACAO_API:123 http://localhost:81/datasnap/rest/TSM/AberturaCX)",
-      "Bash(curl -s -u TOKEN_AUTENTICACAO_API:123 http://localhost:81/datasnap/rest/TSM/AberturaCX/1/130881/CAIXALIVRE-01)"
+      "Bash(curl -s -u TOKEN_AUTENTICACAO_API:123 http://localhost:81/datasnap/rest/TSM/AberturaCX/1/130881/CAIXALIVRE-01)",
+      "WebFetch(domain:dev.softwareexpress.com.br)",
+      "Bash(cd /d D:\\\\CaixaLivre)",
+      "Bash(npx --yes pm2 logs --lines 40 --nostream)",
+      "Bash(findstr \":3001 \")",
+      "Bash(curl -s http://localhost:3001/api/impressora/cupom -X POST -H \"Content-Type: application/json\" -d \"{\\\\\"forma_pagamento\\\\\":\\\\\"pix\\\\\",\\\\\"total\\\\\":\\\\\"13.20\\\\\",\\\\\"cpf\\\\\":\\\\\"\\\\\",\\\\\"itens\\\\\":[{\\\\\"produto_codigo\\\\\":\\\\\"20222\\\\\",\\\\\"descricao\\\\\":\\\\\"PIMENTA CHEIRO VERDE\\\\\",\\\\\"quantidade\\\\\":1,\\\\\"valor_unitario\\\\\":13.20,\\\\\"unidade\\\\\":\\\\\"UN\\\\\"}]}\")",
+      "Bash(powershell -Command \"Get-Process -Name node -ErrorAction SilentlyContinue | Stop-Process -Force\")",
+      "Bash(echo \"EXIT:$?\")",
+      "Bash(curl -s -X POST http://localhost:3001/api/impressora/cupom -H \"Content-Type: application/json\" -d \"{\\\\\"itens\\\\\":[{\\\\\"produto_codigo\\\\\":\\\\\"001\\\\\",\\\\\"descricao\\\\\":\\\\\"BANANA NANICA GNEL K\\\\\",\\\\\"quantidade\\\\\":0.995,\\\\\"valor_unitario\\\\\":4.89,\\\\\"unidade\\\\\":\\\\\"KG\\\\\"},{\\\\\"produto_codigo\\\\\":\\\\\"002\\\\\",\\\\\"descricao\\\\\":\\\\\"ACUCAR CRISTAL 1KG\\\\\",\\\\\"quantidade\\\\\":2,\\\\\"valor_unitario\\\\\":3.79,\\\\\"unidade\\\\\":\\\\\"UN\\\\\"}],\\\\\"total\\\\\":\\\\\"12.37\\\\\",\\\\\"forma_pagamento\\\\\":\\\\\"pix\\\\\",\\\\\"cpf\\\\\":\\\\\"\\\\\"}\")",
+      "Bash(kill %1)",
+      "Bash(findstr \":3001\")",
+      "PowerShell(Stop-Process -Id 16480 -Force)",
+      "Bash(node -e \"require\\('./src/routes/impressora.js'\\)\")",
+      "Bash(curl -s -X POST http://localhost:3001/api/impressora/cupom -H \"Content-Type: application/json\" -d '{\"itens\":[{\"produto_codigo\":\"001\",\"descricao\":\"BANANA NANICA GNEL K\",\"quantidade\":0.995,\"valor_unitario\":4.89,\"unidade\":\"KG\"},{\"produto_codigo\":\"002\",\"descricao\":\"ACUCAR CRISTAL 1KG\",\"quantidade\":2,\"valor_unitario\":3.79,\"unidade\":\"UN\"}],\"total\":\"12.37\",\"forma_pagamento\":\"pix\",\"cpf\":\"\"}')",
+      "Bash(findstr LISTENING)",
+      "Bash(echo \"PID=$!\")",
+      "Bash(awk '{print $5}')",
+      "Bash(xargs -r kill -9)",
+      "Bash(cd /mnt/d/CaixaLivre/backend && node src/server.js & *)",
+      "PowerShell(Get-Content \"$env:TEMP\\\\caixalivre_server_err.log\" -ErrorAction SilentlyContinue)",
+      "Bash(dir D:/CaixaLivre /b)"
     ]
   }
 }

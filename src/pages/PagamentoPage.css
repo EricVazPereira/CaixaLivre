@@ -82,7 +82,11 @@
   gap: 0.4rem;
 }
 
-/* Item — igual ao item-linha da OperacaoPage */
+/* Item — entrada orquestrada da esquerda */
+@keyframes resumo-item-enter {
+  from { opacity: 0; transform: translateX(-16px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
 .resumo-item {
   display: grid;
   grid-template-columns: 1fr 55px 75px 85px;
@@ -93,6 +97,7 @@
   border: 1px solid rgba(0,139,195,0.07);
   align-items: center;
   box-shadow: var(--shadow-sm);
+  animation: resumo-item-enter 0.38s cubic-bezier(0.16,1,0.3,1) both;
 }
 
 .resumo-item-nome {
@@ -125,14 +130,14 @@
   text-align: right;
 }
 
-/* Total bar — igual ao subtotal-bar da OperacaoPage */
+/* Total bar — gradiente e escala tipográfica = âncora visual da página */
 .resumo-total-bar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 1.25rem 1.5rem;
-  background: var(--fenix-blue);
-  border-top: 1px solid rgba(0,139,195,0.12);
+  padding: 1.25rem 1.75rem;
+  background: linear-gradient(135deg, #00497a 0%, var(--fenix-blue) 100%);
+  border-top: 1px solid rgba(255,255,255,0.10);
   flex-shrink: 0;
 }
 .resumo-total-label {
@@ -140,15 +145,17 @@
   font-size: 10px;
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.2em;
-  color: rgba(255,255,255,0.8);
+  letter-spacing: 0.22em;
+  color: rgba(255,255,255,0.65);
 }
+/* Valor — contraste dramático, lê-se de longe */
 .resumo-total-valor {
   font-family: 'Montserrat', sans-serif;
-  font-size: 1.75rem;
+  font-size: 2.6rem;
   font-weight: 800;
-  letter-spacing: -0.04em;
+  letter-spacing: -0.05em;
   color: white;
+  line-height: 1;
 }
 
 /* ── Pagamento (direita) ── */
@@ -170,7 +177,11 @@
   color: var(--ink-muted);
 }
 
-/* Botões de forma de pagamento */
+/* Botões de forma de pagamento — entram em cascata */
+@keyframes forma-btn-enter {
+  from { opacity: 0; transform: translateX(20px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
 .forma-btn {
   display: flex;
   align-items: center;
@@ -183,7 +194,11 @@
   cursor: pointer;
   transition: all 0.25s cubic-bezier(0.16,1,0.3,1);
   box-shadow: var(--shadow-sm);
+  animation: forma-btn-enter 0.45s cubic-bezier(0.16,1,0.3,1) both;
 }
+.forma-btn:nth-child(1) { animation-delay: 0.05s; }
+.forma-btn:nth-child(2) { animation-delay: 0.12s; }
+.forma-btn:nth-child(3) { animation-delay: 0.19s; }
 .forma-btn:hover {
   border-color: var(--fenix-blue);
   transform: translateX(4px);
@@ -191,8 +206,9 @@
 }
 .forma-btn.forma-selecionada {
   border-color: var(--fenix-blue);
-  background: rgba(0,139,195,0.06);
-  box-shadow: 0 0 0 3px rgba(0,139,195,0.15), var(--shadow-md);
+  border-left: 4px solid var(--fenix-blue);
+  background: rgba(0,139,195,0.05);
+  box-shadow: 0 0 0 3px rgba(0,139,195,0.12), var(--shadow-md);
 }
 
 .forma-btn-icon {
@@ -212,14 +228,43 @@
   color: white;
 }
 
-.forma-btn-nome {
+.forma-btn-texto {
   flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+.forma-btn-nome {
   font-family: 'Montserrat', sans-serif;
-  font-size: 1rem;
+  font-size: 0.95rem;
   font-weight: 700;
   color: var(--ink-primary);
-  text-align: center;
+  text-align: left;
 }
+.forma-btn-sub {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--ink-muted);
+  text-align: left;
+}
+.forma-selecionada .forma-btn-nome { color: var(--ink-primary); }
+.forma-selecionada .forma-btn-sub  { color: rgba(0,139,195,0.7); }
+
+.forma-btn-check {
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  background: var(--fenix-blue);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+/* Spinner: .spin definido globalmente em index.css */
 
 /* Info extra (pix / maquina) */
 .info-pagamento {
@@ -262,9 +307,18 @@
   gap: 0.75rem;
 }
 
-/* Botão confirmar */
+/* Botão confirmar — hero button, mesmo padrão do Pagamento em OperacaoPage */
 .pagamento-confirmar-wrap {
   flex-shrink: 0;
+}
+.btn-confirmar {
+  height: 88px;
+  font-size: 1.05rem;
+  border-radius: 20px;
+  letter-spacing: -0.02em;
+}
+.btn-confirmar iconify-icon {
+  font-size: 1.75rem;
 }
 .btn-confirmar:disabled {
   background: var(--fenix-neutral) !important;
@@ -276,60 +330,4 @@
   display: none;
 }
 
-/* ── Tela de sucesso ── */
-.pagamento-sucesso {
-  min-height: 100vh;
-  background: var(--bg-page);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 2rem;
-}
-
-.sucesso-card {
-  background: var(--bg-panel);
-  border-radius: var(--radius-lg);
-  padding: 3.5rem 4rem;
-  max-width: 500px;
-  width: 100%;
-  box-shadow: var(--shadow-xl);
-  border: 1px solid rgba(0,205,43,0.2);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 1.25rem;
-  text-align: center;
-}
-
-.sucesso-icon-wrap {
-  width: 80px; height: 80px;
-  border-radius: 50%;
-  background: rgba(0,205,43,0.12);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 2.5rem;
-  color: var(--fenix-green);
-}
-
-.sucesso-titulo {
-  font-size: 1.75rem;
-  font-weight: 800;
-  letter-spacing: -0.04em;
-  color: var(--ink-primary);
-}
-.sucesso-valor {
-  font-family: 'Montserrat', sans-serif;
-  font-size: 2.5rem;
-  font-weight: 900;
-  letter-spacing: -0.05em;
-  color: var(--fenix-blue);
-}
-.sucesso-sub {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 10px;
-  font-weight: 500;
-  text-transform: uppercase;
-  letter-spacing: 0.2em;
-  color: var(--ink-muted);
-}
+/* Tela de sucesso migrada para ImpressaoCupomPage */

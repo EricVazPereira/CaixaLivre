@@ -308,7 +308,7 @@ function testarComunicacao() {
  *   { ok: false, sem_peso: true }             ⏱ timeout sem produto
  *   { ok: false, sem_comunicacao: true }      🔌 porta não abriu
  */
-function medirPeso(timeoutMs, estabilidadeMs = 2000) {
+function medirPeso(timeoutMs, estabilidadeMs = 1000) {
   return new Promise((resolve) => {
     let port, timer, baselineTimer, pollTimer, estabilidadeTimer
     let buffer      = Buffer.alloc(0)
@@ -441,7 +441,7 @@ function medirPeso(timeoutMs, estabilidadeMs = 2000) {
  *   { ok: true,  peso_gramas }           ✅ leitura estável
  *   { ok: false, sem_comunicacao: true } 🔌 porta não abriu
  */
-function lerPesoEstavel(timeoutMs = 5000, estabilidadeMs = 2000) {
+function lerPesoEstavel(timeoutMs = 5000, estabilidadeMs = 1000) {
   return new Promise((resolve) => {
     let port, timer, pollTimer, estabilidadeTimer
     let buffer     = Buffer.alloc(0)
@@ -596,7 +596,7 @@ router.get('/aguardar', async (req, res) => {
  */
 router.get('/medir', async (req, res) => {
   const timeoutMs     = parseInt(req.query.timeout,      10) || 15000
-  const estabilidadeMs = parseInt(req.query.estabilidade, 10) || 2000
+  const estabilidadeMs = parseInt(req.query.estabilidade, 10) || 1000
   if (!HABILITADA) return res.json({ ok: true, desabilitada: true })
   const resultado = await medirPeso(timeoutMs, estabilidadeMs)
   console.log(`[balanca] /medir (estab=${estabilidadeMs}ms) →`, resultado)

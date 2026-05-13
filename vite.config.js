@@ -21,24 +21,16 @@ function lerIni(secao, chave, padrao) {
   return padrao
 }
 
-const backendPorta = parseInt(lerIni('Servidor', 'Porta', '3001'), 10) || 3001
-const servidorUrl  = lerIni('Servidor', 'Endereco', `http://localhost:${backendPorta}`)
 const agentePorta  = parseInt(lerIni('Agente', 'Porta', '3002'), 10) || 3002
 
 export default defineConfig({
   plugins: [react()],
   server: {
     proxy: {
-      // Balança → agente local (sempre na máquina do totem)
-      '/api/balanca': {
-        target: `http://localhost:${agentePorta}`,
-        changeOrigin: true,
-      },
-      // Tudo mais → servidor central (pode estar em outra máquina)
-      '/api': {
-        target: servidorUrl,
-        changeOrigin: true,
-      },
+      // Balança → agente local (hardware do totem)
+      '/api/balanca': { target: `http://localhost:${agentePorta}`, changeOrigin: true },
+      // Tudo mais → servidor central
+      '/api': { target: 'http://localhost:3001', changeOrigin: true },
     },
   },
 })

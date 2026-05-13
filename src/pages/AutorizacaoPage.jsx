@@ -24,7 +24,7 @@ export default function AutorizacaoPage() {
   const { setErpBarcode } = useCaixaStore()
 
   const PIN_MAX = 6
-  const KEYS = ['1','2','3','4','5','6','7','8','9','','0','⌫']
+  const KEYS = ['7','8','9','4','5','6','1','2','3','','0','⌫']
 
   function pressKey(key) {
     if (key === '⌫') setPin(p => p.slice(0, -1))

@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useCarrinhoStore } from '../store/carrinhoStore'
 import { useCaixaStore } from '../store/caixaStore'
-import { fecharComanda, imprimirPaginaTeste } from '../services/api'
+import { fecharComanda, imprimirCupom } from '../services/api'
 import './PagamentoPage.css'
 
 const FORMAS = [
@@ -29,7 +29,18 @@ export default function PagamentoPage() {
       const subtotalVal = total.toFixed(2)
       await fecharComanda({ subtotal: subtotalVal, total: subtotalVal, barcode: erpBarcode, forma_pagamento: formaSelecionada, cpf: cpf ?? '' })
       setErpBarcode('')
-      imprimirPaginaTeste() // fire-and-forget — não bloqueia a navegação
+      imprimirCupom({  // fire-and-forget — não bloqueia a navegação
+        itens: itens.map(item => ({
+          produto_codigo: item.codigo,
+          descricao:      item.descricao,
+          quantidade:     item.quantidade,
+          valor_unitario: item.valor_unitario,
+          unidade:        item.unidade || 'UN',
+        })),
+        total:           subtotalVal,
+        forma_pagamento: formaSelecionada,
+        cpf:             cpf ?? '',
+      })
       navigate('/impressao', { state: { total: subtotalVal, forma: formaSelecionada } })
     } catch (e) {
       setErro(e.message)
@@ -59,8 +70,12 @@ export default function PagamentoPage() {
             <span style={{ textAlign: 'right' }}>Total</span>
           </div>
           <div className="resumo-itens">
-            {itens.map(item => (
-              <div key={item.codigo} className="resumo-item">
+            {itens.map((item, index) => (
+              <div
+                key={item.codigo}
+                className="resumo-item"
+                style={{ animationDelay: `${index * 0.04}s` }}
+              >
                 <span className="resumo-item-nome">{item.descricao}</span>
                 <span className="resumo-item-qtd">{item.quantidade} {item.unidade}</span>
                 <span className="resumo-item-preco">R$ {item.valor_unitario.toFixed(2)}</span>
@@ -87,11 +102,20 @@ export default function PagamentoPage() {
               className={`forma-btn ${formaSelecionada === forma.id ? 'forma-selecionada' : ''}`}
               onClick={() => setFormaSelecionada(forma.id)}
               disabled={processando}
+              aria-pressed={formaSelecionada === forma.id}
             >
               <div className="forma-btn-icon">
                 <iconify-icon icon={forma.icon} style={{ fontSize: '1.5rem' }} />
               </div>
-              <span className="forma-btn-nome">{forma.nome}</span>
+              <div className="forma-btn-texto">
+                <span className="forma-btn-nome">{forma.nome}</span>
+                <span className="forma-btn-sub">{forma.sub}</span>
+              </div>
+              {formaSelecionada === forma.id && (
+                <div className="forma-btn-check">
+                  <iconify-icon icon="tabler:check" style={{ fontSize: '1rem' }} />
+                </div>
+              )}
             </button>
           ))}
 
@@ -121,9 +145,12 @@ export default function PagamentoPage() {
               className="btn-fenix btn-green btn-confirmar"
               onClick={handleConfirmar}
               disabled={!formaSelecionada || processando}
-              style={{ height: '80px', fontSize: '0.9rem', borderRadius: '16px' }}
+              aria-busy={processando}
             >
-              <iconify-icon icon="tabler:circle-check" style={{ fontSize: '1.5rem' }} />
+              {processando
+                ? <iconify-icon icon="tabler:loader-2" class="spin" />
+                : <iconify-icon icon="tabler:circle-check" />
+              }
               {processando ? 'Processando…' : `Pagar R$ ${total.toFixed(2).replace('.', ',')}`}
             </button>
           </div>

@@ -6,46 +6,33 @@
 
 const http  = require('http');
 const https = require('https');
-const os    = require('os');
 
-const { ERP_HOST, ERP_PORT, ERP_HTTPS, ERP_AUTH } = require('./config');
+const { ERP_HOST, ERP_PORT, ERP_HTTPS, ERP_AUTH, NM_ESTACAO } = require('./config');
 
 const httpLib  = ERP_HTTPS ? https : http;
 const ERP_BASE = '/datasnap/rest/TSM';
-const AUTH     = ERP_AUTH;
-
-/** Nome do computador — usado como NM_ESTACAO em todas as chamadas */
-const NM_ESTACAO = os.hostname().toUpperCase();
 
 /**
- * Faz POST JSON para um método DataSnap.
- * DataSnap mapeia POST → update<metodo>, então use para métodos que começam com "update" no ERP.
- * Retorna result[0] ou o valor cru.
+ * Executa uma requisição HTTP ao ERP e resolve com result[0] ou o valor cru.
+ * @param {number} [timeoutMs=10000] - Timeout em ms. Use valores maiores para
+ *   operações pesadas (GravaItens, FechamentoComanda) que envolvem I/O de BD.
  */
-function chamarERPPost(metodo, body = {}) {
-  const json = JSON.stringify(body);
+function requisitarERP(method, path, body = null, timeoutMs = 10_000) {
+  const json    = body ? JSON.stringify(body) : null;
+  const headers = {
+    Authorization: ERP_AUTH,
+    Accept:        'application/json',
+    ...(json && { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(json) }),
+  };
 
   return new Promise((resolve, reject) => {
-    const options = {
-      hostname: ERP_HOST,
-      port:     ERP_PORT,
-      path:     `${ERP_BASE}/${metodo}`,
-      method:   'POST',
-      headers: {
-        Authorization:    AUTH,
-        'Content-Type':   'application/json',
-        'Content-Length': Buffer.byteLength(json),
-        Accept:           'application/json',
-      },
-    };
-
-    const req = httpLib.request(options, (res) => {
+    const req = httpLib.request({ hostname: ERP_HOST, port: ERP_PORT, path, method, headers }, (res) => {
       let data = '';
       res.setEncoding('utf8');
       res.on('data', chunk => { data += chunk; });
       res.on('end', () => {
         if (res.statusCode < 200 || res.statusCode >= 300)
-          return reject(new Error(`ERP ${metodo} → HTTP ${res.statusCode}: ${data}`));
+          return reject(new Error(`ERP ${path} → HTTP ${res.statusCode}: ${data}`));
         try {
           const parsed = JSON.parse(data);
           resolve(parsed.result !== undefined ? parsed.result[0] : parsed);
@@ -56,57 +43,14 @@ function chamarERPPost(metodo, body = {}) {
     });
 
     req.on('error', e => reject(new Error(`Conexão com ERP falhou: ${e.message}`)));
-    req.setTimeout(10_000, () => { req.destroy(); reject(new Error('ERP timeout (10s)')); });
-    req.write(json);
+    req.setTimeout(timeoutMs, () => { req.destroy(); reject(new Error(`ERP timeout (${timeoutMs / 1000}s)`)); });
+    if (json) req.write(json);
     req.end();
   });
 }
 
-/**
- * Faz GET para um método DataSnap passando parâmetros como segmentos de URL.
- * DataSnap mapeia GET → <metodo> diretamente (sem prefixo).
- * O parâmetro é passado como JSON URL-encoded no path: /TSM/metodo/<json>
- */
-function chamarERPGet(metodo, params = {}) {
-  const paramEncoded = encodeURIComponent(JSON.stringify(params));
-  const path = `${ERP_BASE}/${metodo}/${paramEncoded}`;
-
-  return new Promise((resolve, reject) => {
-    const options = {
-      hostname: ERP_HOST,
-      port:     ERP_PORT,
-      path,
-      method:   'GET',
-      headers: {
-        Authorization: AUTH,
-        Accept:        'application/json',
-      },
-    };
-
-    const req = httpLib.request(options, (res) => {
-      let data = '';
-      res.setEncoding('utf8');
-      res.on('data', chunk => { data += chunk; });
-      res.on('end', () => {
-        if (res.statusCode < 200 || res.statusCode >= 300)
-          return reject(new Error(`ERP ${metodo} → HTTP ${res.statusCode}: ${data}`));
-        try {
-          const parsed = JSON.parse(data);
-          resolve(parsed.result !== undefined ? parsed.result[0] : parsed);
-        } catch {
-          resolve(data.trim());
-        }
-      });
-    });
-
-    req.on('error', e => reject(new Error(`Conexão com ERP falhou: ${e.message}`)));
-    req.setTimeout(10_000, () => { req.destroy(); reject(new Error('ERP timeout (10s)')); });
-    req.end();
-  });
-}
-
-// Alias para manter compatibilidade com chamadas existentes (POST)
-const chamarERP = chamarERPPost;
+const chamarERPPost = (metodo, body, timeoutMs) => requisitarERP('POST', `${ERP_BASE}/${metodo}`, body, timeoutMs);
+const chamarERPGet  = (metodo, path)             => requisitarERP('GET',  `${ERP_BASE}/${metodo}/${path}`);
 
 // ── Métodos do ERP ───────────────────────────────────────────────────────────
 
@@ -128,7 +72,7 @@ async function verificarCaixaAberto() {
  * cod_operador e cod_executor são os códigos dos operadores (padrão "0" = GERAL).
  */
 async function abrirCaixaERP(cod_operador = '0', cod_executor = '0') {
-  return chamarERP('AberturaCX', {
+  return chamarERPPost('AberturaCX', {
     nm_estacao:   NM_ESTACAO,
     cod_operador: String(cod_operador),
     cod_executor: String(cod_executor),
@@ -147,6 +91,8 @@ async function abrirCaixaERP(cod_operador = '0', cod_executor = '0') {
  * Retorna o que o ERP devolver (geralmente o ID da conta criada).
  */
 async function gravarItensERP({ id = '', nrMesa = '', consumo = [] }) {
+  // 30s: GravaItens envolve escrita no BD do ERP e pode demorar mais que o default,
+  // especialmente na primeira chamada quando o ERP cria a conta/comanda.
   return chamarERPPost('GravaItens', {
     cabecalho: {
       ID:         id,
@@ -160,7 +106,7 @@ async function gravarItensERP({ id = '', nrMesa = '', consumo = [] }) {
       Vl_Pro:    Number(item.vl_unitario).toFixed(2),
       Acomp_Pro: '',
     })),
-  });
+  }, 30_000);
 }
 
 /**
@@ -175,17 +121,18 @@ async function gravarItensERP({ id = '', nrMesa = '', consumo = [] }) {
  * @param {string} [opts.add_service]  - Acréscimo/taxa de serviço (vazio se não houver)
  * @param {string} opts.operadora      - Formato: "OPERADORA|VALOR|" (ex: "PIX|10.00|")
  */
-async function fecharComandaERP({ subtotal, total, barcode, discount = '0', cpf = '', add_service = '', operadora }) {
+async function fecharComandaERP({ subtotal, total, barcode, discount = '0', cpf = '', add_service = '0', operadora }) {
+  // 30s: fechamento envolve geração de NF-Ce + escrita no BD, pode demorar.
   return chamarERPPost('FechamentoComandaSmartPDV', {
     subtotal:             String(subtotal),
     total:                String(total),
     barcode:              String(barcode),
-    discount:             String(discount || '0'),
+    discount:             String(discount),
     cpf:                  cpf || '',
-    add_service:          add_service || '',
+    add_service:          String(add_service),
     operadora_smart_pdv:  operadora,
     nm_estacao:           NM_ESTACAO,
-  });
+  }, 30_000);
 }
 
 /**
@@ -202,45 +149,10 @@ async function fecharCaixaERP(cod_executor = '0') {
 
 /**
  * Consulta o FORMATO_PRO de um produto via ERP.
- * GET /datasnap/rest/TSM/ConsultaFormatoProduto/{cod_pro}
  * Retorna { cod_pro, ds_pro, formato_pro, fl_ativo } ou lança em caso de falha.
  */
-function consultaFormatoProduto(codPro) {
-  const path = `${ERP_BASE}/ConsultaFormatoProduto/${encodeURIComponent(String(codPro))}`;
-
-  return new Promise((resolve, reject) => {
-    const options = {
-      hostname: ERP_HOST,
-      port:     ERP_PORT,
-      path,
-      method:   'GET',
-      headers: {
-        Authorization: AUTH,
-        Accept:        'application/json',
-      },
-    };
-
-    const req = httpLib.request(options, (res) => {
-      let data = '';
-      res.setEncoding('utf8');
-      res.on('data', chunk => { data += chunk; });
-      res.on('end', () => {
-        if (res.statusCode < 200 || res.statusCode >= 300)
-          return reject(new Error(`ERP ConsultaFormatoProduto → HTTP ${res.statusCode}: ${data}`));
-        try {
-          const parsed = JSON.parse(data);
-          resolve(parsed.result !== undefined ? parsed.result[0] : parsed);
-        } catch {
-          resolve(data.trim());
-        }
-      });
-    });
-
-    req.on('error', e => reject(new Error(`Conexão com ERP falhou: ${e.message}`)));
-    req.setTimeout(10_000, () => { req.destroy(); reject(new Error('ERP timeout (10s)')); });
-    req.end();
-  });
-}
+const consultaFormatoProduto = (codPro) =>
+  chamarERPGet('ConsultaFormatoProduto', encodeURIComponent(String(codPro)));
 
 /**
  * Grava o FORMATO_PRO de um produto via ERP.
@@ -254,4 +166,12 @@ function gravaFormatoProduto(codPro, pesoGramas) {
   });
 }
 
-module.exports = { NM_ESTACAO, verificarCaixaAberto, abrirCaixaERP, gravarItensERP, fecharComandaERP, fecharCaixaERP, consultaFormatoProduto, gravaFormatoProduto };
+/**
+ * Busca os dados da empresa via ERP.
+ * GET /datasnap/rest/TSM/PegaDadosEmpresa
+ * Retorna objeto com CNPJ, IE, Nome Fantasia, Razao Social, endereço etc.
+ */
+const pegaDadosEmpresa = () =>
+  requisitarERP('GET', `${ERP_BASE}/PegaDadosEmpresa`);
+
+module.exports = { NM_ESTACAO, verificarCaixaAberto, abrirCaixaERP, gravarItensERP, fecharComandaERP, fecharCaixaERP, consultaFormatoProduto, gravaFormatoProduto, pegaDadosEmpresa };

@@ -83,6 +83,27 @@
 }
 .btn-header--dark:hover { filter: brightness(1.12); }
 
+/* Status de sistema — canto direito do header */
+.operacao-status {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0 0.875rem;
+  height: 30px;
+  border-radius: var(--radius-pill);
+  background: rgba(0, 205, 43, 0.08);
+  border: 1px solid rgba(0, 205, 43, 0.20);
+  flex-shrink: 0;
+}
+.operacao-status-txt {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  color: #20b264;
+}
+
 /* ── Main grid ── */
 .operacao-main {
   display: grid;
@@ -131,16 +152,72 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 1rem;
-  color: var(--ink-muted);
+  gap: 1.5rem;
   padding: 3rem;
   text-align: center;
 }
-.lista-vazia iconify-icon { font-size: 3rem; opacity: 0.3; }
+
+/* Scanner icon — o centro visual do estado vazio */
+.lista-vazia-icon-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@keyframes scanner-pulse {
+  0%, 100% { box-shadow: 0 0 0 0   rgba(0,139,195,0.28); }
+  55%       { box-shadow: 0 0 0 20px rgba(0,139,195,0); }
+}
+@keyframes scan-beam {
+  0%   { top: 18%; opacity: 0.9; }
+  80%  { opacity: 0.6; }
+  100% { top: 82%; opacity: 0;   }
+}
+
+.lista-vazia-icon-circle {
+  width: 104px; height: 104px;
+  border-radius: 50%;
+  background: rgba(0,139,195,0.07);
+  border: 1.5px solid rgba(0,139,195,0.18);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--fenix-blue);
+  font-size: 3.4rem;
+  position: relative;
+  overflow: hidden;
+  animation: scanner-pulse 2.6s ease-in-out infinite;
+}
+
+/* O feixe de scanner que varre o ícone */
+.lista-vazia-scan-beam {
+  position: absolute;
+  left: 14%; right: 14%;
+  height: 2px;
+  border-radius: 99px;
+  background: linear-gradient(90deg, transparent 0%, var(--fenix-blue) 30%, rgba(0,139,195,0.8) 70%, transparent 100%);
+  animation: scan-beam 2.2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  pointer-events: none;
+}
+
+/* Texto — escala arquitetônica, lê-se de longe */
 .lista-vazia-txt {
-  font-size: 0.95rem;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 1.5rem;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  color: var(--ink-secondary);
+  line-height: 1.2;
+}
+.lista-vazia-sub {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
   font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
   color: var(--ink-disabled);
+  max-width: 260px;
 }
 
 /* Item linha */
@@ -176,7 +253,7 @@
 }
 
 .item-nome {
-  font-size: 0.65rem;
+  font-size: 0.82rem;
   font-weight: 700;
   color: var(--ink-primary);
   white-space: nowrap;
@@ -185,38 +262,59 @@
 }
 .item-qtd, .item-preco, .item-total {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 0.6rem;
+  font-size: 0.72rem;
   font-weight: 500;
   color: var(--ink-secondary);
   text-align: right;
 }
-.item-total { color: var(--fenix-blue); font-weight: 600; }
+.item-total { color: var(--fenix-blue); font-weight: 700; }
 
-/* Subtotal */
+/* Entrada de item — desliza da esquerda, uma vez ao montar */
+@keyframes item-enter {
+  from { opacity: 0; transform: translateX(-18px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+.item-linha { animation: item-enter 0.38s cubic-bezier(0.16,1,0.3,1) both; }
+
+/* Subtotal — âncora visual da página, leitura imediata do total */
 .subtotal-bar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 1.25rem 1.5rem;
-  background: var(--fenix-blue);
-  border-top: 1px solid rgba(0,139,195,0.12);
+  padding: 1.25rem 1.75rem;
+  background: linear-gradient(135deg, #00497a 0%, var(--fenix-blue) 100%);
+  border-top: 1px solid rgba(255,255,255,0.10);
   flex-shrink: 0;
+}
+.subtotal-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
 }
 .subtotal-label {
   font-family: 'JetBrains Mono', monospace;
   font-size: 10px;
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.2em;
-  color: rgba(255,255,255,0.8);
+  letter-spacing: 0.22em;
+  color: rgba(255,255,255,0.65);
 }
+.subtotal-count {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  color: rgba(255,255,255,0.42);
+}
+/* Valor — contraste dramático 28:1 vs label */
 .subtotal-valor {
   font-family: 'Montserrat', sans-serif;
-  font-size: 1.75rem;
+  font-size: 2.8rem;
   font-weight: 800;
-  letter-spacing: -0.04em;
+  letter-spacing: -0.05em;
   color: white;
-  }
+  line-height: 1;
+}
 
 /* ── Painel de controles (coluna direita) ── */
 .controles-col {
@@ -228,12 +326,13 @@
   overflow-y: auto;
 }
 
-/* Barcode form */
+/* Barcode form — interface de terminal de leitura */
 .barcode-card {
   background: var(--bg-panel);
   border-radius: var(--radius-lg);
   padding: 1.25rem;
-  border: 1px solid rgba(0,139,195,0.10);
+  border: 1px solid rgba(0,139,195,0.12);
+  border-left: 4px solid var(--fenix-blue);
   box-shadow: var(--shadow-sm);
   display: flex;
   flex-direction: column;
@@ -250,13 +349,13 @@
 }
 .barcode-input {
   width: 100%;
-  height: 52px;
+  height: 58px;
   background: var(--bg-subtle);
-  border: 1px solid rgba(0,139,195,0.15);
+  border: 1.5px solid rgba(0,139,195,0.15);
   border-radius: var(--radius-md);
   padding: 0 1rem;
   font-family: 'JetBrains Mono', monospace;
-  font-size: 0.75rem;
+  font-size: 0.82rem;
   font-weight: 500;
   color: var(--ink-primary);
   outline: none;
@@ -264,10 +363,27 @@
 }
 .barcode-input:focus {
   border-color: var(--fenix-blue);
-  box-shadow: 0 0 0 3px rgba(0,139,195,0.12);
+  box-shadow: 0 0 0 4px rgba(0,139,195,0.10);
+  background: var(--bg-panel);
 }
 .barcode-input::placeholder { color: var(--ink-disabled); }
 .barcode-input:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* Status de terminal — PRONTO / Buscando */
+.barcode-terminal-status {
+  display: flex;
+  align-items: center;
+  gap: 0.42rem;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  color: #20b264;
+}
+.barcode-terminal-status--busy {
+  color: var(--fenix-blue);
+}
 
 /* Aviso modo exclusão */
 .aviso-exclusao {
@@ -283,25 +399,228 @@
   color: var(--fenix-orange);
 }
 
-/* Avisos de balança */
-.aviso-balanca {
+/* ── Overlay de instrução — bottom sheet de tela cheia ────────────────────── */
+@keyframes instrucao-fade-in    { from { opacity: 0; } to { opacity: 1; } }
+@keyframes instrucao-slide-up   {
+  from { transform: translateY(80px); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+@keyframes instrucao-child-up   {
+  from { transform: translateY(28px); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+@keyframes instrucao-child-scale {
+  from { transform: scale(0.68) translateY(16px); opacity: 0; }
+  to   { transform: scale(1)    translateY(0);    opacity: 1; }
+}
+
+/* Backdrop — contextual tint */
+.instrucao-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  z-index: 150;
+  display: flex;
+  align-items: flex-end;
+  animation: instrucao-fade-in 0.25s ease;
+}
+.instrucao-overlay--verificar  { background: rgba(0, 22, 46, 0.74); }
+.instrucao-overlay--aprender   { background: rgba(0, 38, 16, 0.74); }
+.instrucao-overlay--total      { background: rgba(0, 22, 46, 0.74); }
+.instrucao-overlay--alerta     { background: rgba(60, 0, 0, 0.78); }
+.instrucao-overlay--liberacao  { background: rgba(50, 24, 0, 0.78); }
+
+/* Panel */
+.instrucao-painel {
+  width: 100%;
+  background: var(--bg-panel);
+  border-radius: 32px 32px 0 0;
+  padding: 2.75rem 3rem 4rem;
   display: flex;
   flex-direction: column;
-  gap: 0.3rem;
-  border-radius: var(--radius-md);
-  padding: 0.75rem 1rem;
-  font-size: 0.82rem;
-  font-weight: 600;
+  align-items: center;
+  gap: 1.5rem;
+  text-align: center;
+  box-shadow: 0 -28px 80px rgba(0, 0, 0, 0.28);
+  animation: instrucao-slide-up 0.42s cubic-bezier(0.16, 1, 0.3, 1);
 }
-.aviso-balanca--verificar {
+
+/* Top accent strip — contextual color */
+.instrucao-overlay--verificar .instrucao-painel,
+.instrucao-overlay--total     .instrucao-painel {
+  border-top: 5px solid var(--fenix-blue);
+}
+.instrucao-overlay--aprender .instrucao-painel {
+  border-top: 5px solid #20b264;
+}
+.instrucao-overlay--alerta .instrucao-painel {
+  border-top: 5px solid var(--fenix-red);
+}
+.instrucao-overlay--liberacao .instrucao-painel {
+  border-top: 5px solid var(--fenix-orange);
+}
+
+/* Orchestrated child reveals — each element arrives sequentially */
+.instrucao-painel > *:nth-child(1) {
+  animation: instrucao-child-scale 0.52s cubic-bezier(0.16,1,0.3,1) 0.06s both;
+}
+.instrucao-painel > *:nth-child(2) {
+  animation: instrucao-child-up   0.56s cubic-bezier(0.16,1,0.3,1) 0.16s both;
+}
+.instrucao-painel > *:nth-child(3) {
+  animation: instrucao-child-up   0.52s cubic-bezier(0.16,1,0.3,1) 0.25s both;
+}
+.instrucao-painel > *:nth-child(4) {
+  animation: instrucao-child-scale 0.62s cubic-bezier(0.16,1,0.3,1) 0.34s both;
+}
+.instrucao-painel > *:nth-child(5) {
+  animation: instrucao-child-up   0.48s cubic-bezier(0.16,1,0.3,1) 0.46s both;
+}
+
+/* Icon — elevated with layered glow */
+.instrucao-icone {
+  width: 112px; height: 112px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 3.5rem;
+  flex-shrink: 0;
+}
+.instrucao-icone--verificar {
   background: rgba(0,139,195,0.10);
-  border: 1px solid rgba(0,139,195,0.28);
   color: var(--fenix-blue);
+  box-shadow: 0 0 0 18px rgba(0,139,195,0.06), 0 8px 36px rgba(0,139,195,0.20);
 }
-.aviso-balanca--aprender {
+.instrucao-icone--aprender  {
   background: rgba(32,178,100,0.10);
-  border: 1px solid rgba(32,178,100,0.28);
   color: #20b264;
+  box-shadow: 0 0 0 18px rgba(32,178,100,0.06), 0 8px 36px rgba(32,178,100,0.20);
+}
+.instrucao-icone--total     {
+  background: rgba(0,139,195,0.08);
+  color: var(--fenix-blue);
+  box-shadow: 0 0 0 16px rgba(0,139,195,0.05), 0 8px 28px rgba(0,139,195,0.14);
+}
+.instrucao-icone--alerta {
+  background: rgba(229,57,53,0.10);
+  color: var(--fenix-red);
+  box-shadow: 0 0 0 18px rgba(229,57,53,0.06), 0 8px 36px rgba(229,57,53,0.22);
+}
+.instrucao-icone--liberacao {
+  background: rgba(200,113,11,0.10);
+  color: var(--fenix-orange);
+  box-shadow: 0 0 0 18px rgba(200,113,11,0.06), 0 8px 36px rgba(200,113,11,0.22);
+}
+
+/* Title — architectural scale, reads from across the room */
+.instrucao-titulo {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 3rem;
+  font-weight: 800;
+  letter-spacing: -0.05em;
+  color: var(--ink-primary);
+  line-height: 1.1;
+  max-width: 600px;
+}
+
+/* Subtitle — intimate contrast to the headline */
+.instrucao-sub {
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--ink-muted);
+  max-width: 460px;
+  line-height: 1.65;
+}
+
+/* Countdown — visual centerpiece, 12:1 scale ratio vs body text */
+.instrucao-countdown {
+  display: flex;
+  align-items: baseline;
+  gap: 0.35rem;
+}
+.instrucao-countdown-num {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 7rem;
+  font-weight: 800;
+  letter-spacing: -0.06em;
+  line-height: 1;
+}
+.instrucao-countdown-num--verificar { color: var(--fenix-blue); }
+.instrucao-countdown-num--aprender  { color: #20b264; }
+.instrucao-countdown-s {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: var(--ink-disabled);
+  margin-bottom: 1.2rem;
+}
+
+/* Progress track */
+.instrucao-progresso-track {
+  width: 100%;
+  max-width: 560px;
+  height: 8px;
+  border-radius: 99px;
+  background: rgba(0, 0, 0, 0.07);
+  overflow: hidden;
+}
+.instrucao-progresso-bar {
+  height: 100%;
+  border-radius: 99px;
+  transition: width 0.95s linear;
+  position: relative;
+}
+/* Shimmer — uses global @keyframes shimmer from index.css */
+.instrucao-progresso-bar::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.42) 50%, transparent 100%);
+  background-size: 200% 100%;
+  animation: shimmer 1.6s linear infinite;
+}
+.instrucao-progresso-bar--verificar { background: var(--fenix-blue); }
+.instrucao-progresso-bar--aprender  { background: #20b264; }
+
+/* Elementos interativos dentro do painel (botões de ação, PIN, numpad) */
+.instrucao-painel > .btn-fenix {
+  width: 100%;
+  max-width: 520px;
+  height: 72px;
+  border-radius: 16px;
+  font-size: 1rem;
+}
+.instrucao-painel > .autorizacao-btns {
+  width: 100%;
+  max-width: 520px;
+}
+.instrucao-painel > .liberacao-pin-display {
+  width: 100%;
+  max-width: 520px;
+}
+.instrucao-painel > .liberacao-numpad {
+  width: 100%;
+}
+.instrucao-painel > .autorizacao-erro {
+  width: 100%;
+  max-width: 520px;
+}
+
+/* Spinner (verificandoTotal) */
+.instrucao-spinner {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.20em;
+  color: var(--ink-muted);
 }
 
 /* Erro */
@@ -319,7 +638,9 @@
   line-height: 1.4;
 }
 
-/* Grupo de botões de ação */
+/* ── Hierarquia de botões de ação ─────────────────────────────────────────── */
+
+/* Container principal — empurra tudo ao fundo da coluna */
 .botoes-acao {
   display: flex;
   flex-direction: column;
@@ -327,8 +648,80 @@
   margin-top: auto;
 }
 
+/* Botão de ação */
+.btn-acao {
+  height: 68px;
+  font-size: 0.875rem;
+  border-radius: 16px;
+}
+
+/* Hero button — Pagamento, elemento mais importante da página */
+.btn-acao--primary {
+  height: 88px;
+  font-size: 1.05rem;
+  border-radius: 20px;
+  letter-spacing: -0.02em;
+}
+.btn-acao--primary iconify-icon {
+  font-size: 1.75rem;
+}
+
+.btn-acao--pulsing {
+  animation: pulse-green 2s ease-in-out infinite;
+}
+@keyframes pulse-green {
+  0%, 100% { box-shadow: 0px 7px 20px rgba(0,205,43,0.35); }
+  50%       { box-shadow: 0px 7px 32px rgba(0,205,43,0.58); }
+}
+
+/* Carregando no barcode-card */
+.barcode-card--carregando .barcode-input {
+  color: transparent;
+}
+.barcode-card-status {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  color: var(--fenix-blue);
+  min-height: 16px;
+}
+
+/* Botões secundários dentro do barcode-card */
+.barcode-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+.btn-barcode-action {
+  height: 58px;
+  font-size: 0.75rem;
+  padding: 0 1rem;
+  border-radius: 12px;
+}
 
 
+
+/* ── Classes de botão para modais ── */
+.btn-modal {
+  height: 64px;
+  font-size: 0.8rem;
+  border-radius: 14px;
+}
+.btn-modal--sm {
+  height: 52px;
+  font-size: 0.75rem;
+  border-radius: 12px;
+}
+.btn-modal--full {
+  height: 64px;
+  font-size: 0.9rem;
+  border-radius: 16px;
+  width: 100%;
+}
 /* ── Modal overlay ── */
 .modal-overlay {
   position: fixed;
@@ -456,41 +849,8 @@
   margin-top: 0.5rem;
 }
 
-/* ── Modal Liberação Gerente ── */
+/* ── Modal overlay alerta (legacy — mantido para compatibilidade) ── */
 .modal-overlay--alerta { background: rgba(0,0,0,0.72); }
-
-.modal-liberacao-card {
-  border-color: rgba(200,113,11,0.25);
-  max-width: 420px;
-}
-
-.modal-liberacao-icon {
-  width: 80px; height: 80px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, var(--fenix-orange) 0%, var(--fenix-yellow) 100%);
-  display: flex; align-items: center; justify-content: center;
-  font-size: 2.5rem;
-  color: #fff;
-  box-shadow: 0 6px 24px rgba(200,113,11,0.40);
-}
-
-.modal-liberacao-titulo {
-  font-size: 1.25rem;
-  font-weight: 800;
-  letter-spacing: -0.03em;
-  background: linear-gradient(135deg, var(--fenix-orange) 0%, var(--fenix-yellow-alt) 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  text-align: center;
-}
-
-.modal-liberacao-desc {
-  font-size: 0.88rem;
-  color: var(--ink-muted);
-  text-align: center;
-  line-height: 1.5;
-}
 
 /* ── Modal Quantidade ── */
 .modal-quantidade-card {
@@ -522,30 +882,6 @@
   line-height: 1;
 }
 
-/* ── Modal Peso Total ── */
-.modal-peso-total-icon {
-  width: 80px; height: 80px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #e53935 0%, #ff7043 100%);
-  display: flex; align-items: center; justify-content: center;
-  font-size: 2.5rem;
-  color: #fff;
-  box-shadow: 0 6px 24px rgba(229,57,53,0.38);
-  margin: 0 auto;
-}
-.modal-peso-total-titulo {
-  font-size: 1.25rem;
-  font-weight: 800;
-  letter-spacing: -0.03em;
-  color: #e53935;
-}
-.modal-peso-total-desc {
-  font-size: 0.93rem;
-  color: var(--ink-muted);
-  line-height: 1.6;
-  max-width: 340px;
-  margin: 0 auto;
-}
 
 /* ── Overlay: Passe o produto no leitor ── */
 .modal-passar-overlay {
@@ -617,7 +953,7 @@
 }
 .liberacao-numpad .numpad-key {
   aspect-ratio: 1;
-  border-radius: 50%;
+  border-radius: 16px;
   border: none;
   background: var(--bg-subtle);
   font-family: 'Montserrat', sans-serif;

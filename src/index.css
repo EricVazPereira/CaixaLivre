@@ -170,6 +170,11 @@ body {
   background: rgba(0,139,195,0.07);
   color: var(--fenix-blue);
 }
+.btn-voltar:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+  pointer-events: none;
+}
 
 /* Ghost buttons and highlights */
 .destaque-btn {
@@ -265,6 +270,11 @@ body {
   0%   { background-position: 200% 0; }
   100% { background-position: -200% 0; }
 }
+
+@keyframes spin-icon {
+  to { transform: rotate(360deg); }
+}
+.spin { animation: spin-icon 0.8s linear infinite; display: inline-block; }
 .shimmer-bar {
     height: 10px; border-radius: var(--radius-pill);
     background: linear-gradient(90deg, rgba(255,255,255,0.1) 25%, rgba(255,255,255,0.3) 50%, rgba(255,255,255,0.1) 75%);

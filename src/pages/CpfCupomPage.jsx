@@ -44,7 +44,7 @@ export default function CpfCupomPage() {
     else if (digits.length < 11) setDigits(d => d + key)
   }
 
-  const KEYS = ['1','2','3','4','5','6','7','8','9','','0','⌫']
+  const KEYS = ['7','8','9','4','5','6','1','2','3','','0','⌫']
 
   if (modo === 'digitar') {
     const raw = digits + '_'.repeat(Math.max(0, 11 - digits.length))
@@ -59,6 +59,7 @@ export default function CpfCupomPage() {
             <iconify-icon icon="tabler:id" />
           </div>
           <h1 className="cpf-title">Digite seu CPF</h1>
+          <p className="cpf-desc">11 dígitos, sem pontos ou traços</p>
           <div className={`cpf-display-formatted ${digits.length > 0 ? 'cpf-display--active' : ''}`}>
             {formatted}
           </div>
@@ -115,11 +116,12 @@ export default function CpfCupomPage() {
           <iconify-icon icon="tabler:receipt" />
         </div>
         <h1 className="cpf-title">CPF no cupom?</h1>
+        <p className="cpf-desc">Para acumular pontos ou declarar imposto de renda</p>
         <div className="cpf-btns">
           <button
             className="btn-fenix btn-dark"
             onClick={handleSemCpf}
-            style={{ height: '80px', fontSize: '0.9rem', borderRadius: '16px' }}
+            style={{ height: '80px', borderRadius: '16px' }}
           >
             <iconify-icon icon="tabler:x" style={{ fontSize: '1.5rem' }} />
             Não, continuar
@@ -127,7 +129,7 @@ export default function CpfCupomPage() {
           <button
             className="btn-fenix btn-blue"
             onClick={() => setModo('digitar')}
-            style={{ height: '80px', fontSize: '0.9rem', borderRadius: '16px' }}
+            style={{ height: '80px', borderRadius: '16px' }}
           >
             <iconify-icon icon="tabler:id" style={{ fontSize: '1.5rem' }} />
             Sim, informar CPF

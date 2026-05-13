@@ -4,9 +4,9 @@
   "type": "commonjs",
   "scripts": {
     "dev:servidor": "node --watch src/server.js",
-    "dev:agente":   "node --watch src/agente.js",
+    "dev:agente": "node --watch src/agente.js",
     "start:servidor": "node src/server.js",
-    "start:agente":   "node src/agente.js",
+    "start:agente": "node src/agente.js",
     "seed": "node src/seed.js"
   },
   "dependencies": {
@@ -14,6 +14,7 @@
     "express": "^4.19.2",
     "node-firebird": "^2.0.2",
     "node-sqlite3-wasm": "^0.8.27",
+    "qrcode": "^1.5.4",
     "serialport": "^13.0.0"
   }
 }

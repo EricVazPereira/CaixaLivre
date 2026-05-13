@@ -13,6 +13,7 @@ export default function TotemInicioPage() {
         className="inicio-btn-fechar"
         onClick={e => { e.stopPropagation(); navigate('/fechar') }}
         title="Fechar Caixa"
+        aria-label="Fechar Caixa"
       >
         <iconify-icon icon="tabler:lock" />
       </button>

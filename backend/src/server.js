@@ -1,7 +1,7 @@
 const express = require('express')
 const cors    = require('cors')
 const { query } = require('./db')
-const { SERVIDOR_PORTA } = require('./config')
+const { SERVIDOR_PORTA, NM_ESTACAO, DB_DATABASE } = require('./config')
 
 const produtosRouter   = require('./routes/produtos')
 const contasRouter     = require('./routes/contas')
@@ -61,16 +61,19 @@ async function sincronizarGenerators() {
   }
 }
 
-/** Garante que a estação CAIXALIVRE-01 existe na tabela ESTACAO */
+/** Garante que a estação existe na tabela ESTACAO */
 async function garantirEstacao() {
-  const rows = await query(`SELECT DS_ESTACAO FROM ESTACAO WHERE DS_ESTACAO = 'CAIXALIVRE-01'`)
+  const rows = await query(`SELECT DS_ESTACAO FROM ESTACAO WHERE DS_ESTACAO = ?`, [NM_ESTACAO])
   if (!rows.length) {
     await query(
       `INSERT INTO ESTACAO (DS_ESTACAO, ATIVO_ESTACAO, TP_ESTACAO, INDICE_ESTACAO,
          OPERACAO_ESTACAO, PDV_ESTACAO, ST_ESTACAO, FL_TAXA_GERAL_ESTACAO, DH_MAN_ESTACAO)
-       VALUES ('CAIXALIVRE-01', 1, 0, 0, 1, 1, 1, 0, CURRENT_TIMESTAMP)`
+       VALUES (?, 1, 0, 0, 1, 1, 1, 0, CURRENT_TIMESTAMP)`,
+      [NM_ESTACAO]
     )
-    console.log('✅ Estação CAIXALIVRE-01 cadastrada no Firebird')
+    console.log(`✅ Estação ${NM_ESTACAO} cadastrada no Firebird`)
+  } else {
+    console.log(`✅ Estação ${NM_ESTACAO} encontrada no Firebird`)
   }
 }
 
@@ -78,7 +81,7 @@ Promise.all([sincronizarGenerators(), garantirEstacao()])
   .then(() => {
     app.listen(PORT, () => {
       console.log(`✅ Backend CaixaLivre rodando em http://localhost:${PORT}`)
-      console.log(`🗄️  Banco: Firebird — ORESTRA.FDB`)
+      console.log(`🗄️  Banco: Firebird — ${DB_DATABASE}`)
     })
   })
   .catch(err => {

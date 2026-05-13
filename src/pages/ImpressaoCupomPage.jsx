@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useCarrinhoStore } from '../store/carrinhoStore'
 import './ImpressaoCupomPage.css'
@@ -15,10 +15,10 @@ export default function ImpressaoCupomPage() {
 
   const [segundos, setSegundos] = useState(TOTAL_SECONDS)
 
-  function irParaInicio() {
+  const irParaInicio = useCallback(() => {
     cancelarConta()
     navigate('/inicio')
-  }
+  }, [cancelarConta, navigate])
 
   useEffect(() => {
     const t = setInterval(() => {
@@ -28,7 +28,7 @@ export default function ImpressaoCupomPage() {
       })
     }, 1000)
     return () => clearInterval(t)
-  }, [])
+  }, [irParaInicio])
 
   const progresso = (segundos / TOTAL_SECONDS) * 100
 
