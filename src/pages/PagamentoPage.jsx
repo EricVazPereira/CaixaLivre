@@ -27,7 +27,7 @@ export default function PagamentoPage() {
     setErro('')
     try {
       const subtotalVal = total.toFixed(2)
-      await fecharComanda({ subtotal: subtotalVal, total: subtotalVal, barcode: erpBarcode, forma_pagamento: formaSelecionada, cpf: cpf ?? '' })
+      const erpResult = await fecharComanda({ subtotal: subtotalVal, total: subtotalVal, barcode: erpBarcode, forma_pagamento: formaSelecionada, cpf: cpf ?? '' })
       setErpBarcode('')
       imprimirCupom({  // fire-and-forget — não bloqueia a navegação
         itens: itens.map(item => ({
@@ -40,6 +40,10 @@ export default function PagamentoPage() {
         total:           subtotalVal,
         forma_pagamento: formaSelecionada,
         cpf:             cpf ?? '',
+        chaveAcesso:     erpResult?.erp?.chave_acesso_comanda || '',
+        protocolo:       erpResult?.erp?.nr_protocolo_nfce   || '',
+        nfce:            erpResult?.erp?.nr_nfce             || '',
+        urlQrcode:       erpResult?.erp?.url_qrcode          || '',
       })
       navigate('/impressao', { state: { total: subtotalVal, forma: formaSelecionada } })
     } catch (e) {

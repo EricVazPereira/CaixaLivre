@@ -117,12 +117,20 @@ export default function OperacaoPage() {
   // ── Registra produto no carrinho e no ERP ─────────────────────────────────
   function registrarProduto(produto) {
     const qtd = produto.quantidade || 1
+
+    if (!produto.codigo) {
+      console.error('[registrarProduto] Produto sem código:', JSON.stringify(produto))
+      setErro('Produto sem código. Verifique o cadastro no ERP.')
+      return
+    }
+
     adicionarItem(produto, qtd)
+
     gravarItens({
-      id: erpSessionId.current,
+      id:      erpSessionId.current,   // vazio no primeiro item, barcode nos seguintes
       consumo: [{ produto_codigo: produto.codigo, quantidade: qtd, vl_unitario: produto.valor_unitario, obs: '' }],
     }).then(res => {
-      // ERP pode retornar array ou objeto, e o campo pode ser 'barcode' ou 'NRGERADOR'
+      // ERP retorna o barcode (NRGERADOR) que identifica a comanda — guardar em memória
       const erp = res?.erp
       let barcode = null
       if (Array.isArray(erp) && erp.length > 0) {
@@ -130,18 +138,17 @@ export default function OperacaoPage() {
       } else if (erp && typeof erp === 'object') {
         barcode = erp.barcode ?? erp.NRGERADOR ?? erp.nrgerador ?? null
       }
+
       if (barcode) {
+        // Guarda em memória — usado como id em todos os GravaItens seguintes
         erpSessionId.current = String(barcode)
         setErpBarcode(String(barcode))
       } else {
         console.warn('[GravaItens] Barcode não encontrado na resposta do ERP:', JSON.stringify(erp))
       }
     }).catch(err => {
-      // Não exibir erro ao usuário: o item pode ter sido gravado no ERP mesmo
-      // que a resposta HTTP tenha falhado (timeout, 502 transitório). O produto
-      // já está no carrinho via optimistic update — interromper o fluxo causaria
-      // mais problema do que o silêncio. Monitorar nos logs do servidor.
-      console.warn('[GravaItens] Falha na sincronização com ERP (item pode já estar gravado):', err.message)
+      console.error('[GravaItens] Falha na sincronização com ERP:', err.message)
+      setErro(`Erro ao registrar no ERP: ${err.message}`)
     })
   }
 
@@ -188,7 +195,7 @@ export default function OperacaoPage() {
 
     try {
       const produto = await buscarProduto(cod)
-      if (!produto) { setErro(`Produto não encontrado: ${cod}`); return }
+      if (!produto) { setErro('Produto não cadastrado.'); return }
 
       const qtd = quantidadePendente
       const { esperaS, estabMs } = calcularParamsBalanca(qtd)
@@ -260,8 +267,6 @@ export default function OperacaoPage() {
   async function handlePagamento() {
     if (itens.length === 0) { setErro('Nenhum produto adicionado.'); return }
 
-    // erpBarcode vazio significa que nenhum GravaItens teve resposta do ERP —
-    // o fecharComanda iria falhar com "barcode é obrigatório". Bloquear aqui.
     if (!erpBarcode) {
       setErro('Falha na sincronização com o sistema. Chame um atendente.')
       return

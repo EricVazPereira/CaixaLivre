@@ -108,12 +108,12 @@ export async function imprimirPaginaTeste() {
  * @param {string} opts.forma_pagamento - 'pix' | 'credito' | 'debito'
  * @param {string} [opts.cpf]           - CPF do cliente (opcional)
  */
-export async function imprimirCupom({ itens, total, forma_pagamento, cpf = '' }) {
+export async function imprimirCupom({ itens, total, forma_pagamento, cpf = '', chaveAcesso = '', protocolo = '', nfce = '', urlQrcode = '' }) {
   try {
     const res  = await fetch(`${BASE}/impressora/cupom`, {
       method:  'POST',
       headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify({ itens, total, forma_pagamento, cpf }),
+      body:    JSON.stringify({ itens, total, forma_pagamento, cpf, chaveAcesso, protocolo, nfce, urlQrcode }),
     })
     const data = await res.json().catch(() => ({}))
     if (!data.ok) console.warn('[Impressora] Cupom —', data.erro || 'falha desconhecida')

@@ -702,23 +702,20 @@ function secaoCabecalho(empresa) {
  * QR (esquerda) + infos NFC-e (direita) compostos como bitmap único (GS v 0).
  * Funciona no TM-T20 sem precisar de page mode.
  */
-function secaoQRProtocolo({ protocolo, nfce, serie, dataHora }) {
+function secaoQRProtocolo({ protocolo, nfce, dataHora, urlQrcode }) {
   const parts = []
   const add   = (...b) => b.forEach(x => parts.push(x))
 
   const protoStr = da(String(protocolo || '0'.repeat(15)))
   const nfceStr  = da(String(nfce  || '000000'))
-  const serieStr = da(String(serie || '001'))
   const dtStr    = da(dataHora || fmtDatetime())
+  const qrUrl    = urlQrcode || URL_NFCE
 
-  const qrPx = renderQRPixels(URL_NFCE, 3, 2)   // modulo 3, quiet zone 2
+  const qrPx = renderQRPixels(qrUrl, 3, 2)   // modulo 3, quiet zone 2
 
   if (qrPx) {
     const txtPx = renderTextBlock([
-      `NFC-E: ${nfceStr}`,
-      `SERIE: ${serieStr}`,
-      dtStr,
-      '-'.repeat(20),
+      { text: `NFC-E: ${nfceStr}`, scale: 3 },  // negrito via escala maior
       'PROTOCOLO DE AUTORIZACAO:',
       protoStr,
       dtStr,
@@ -739,10 +736,8 @@ function secaoQRProtocolo({ protocolo, nfce, serie, dataHora }) {
     add(t(''))
   } else {
     // Fallback: QR ESC/POS centralizado + texto abaixo
-    add(CMD_ALIGN_C, qrEscPos(URL_NFCE, 4), CMD_ALIGN_L)
-    add(t(cols(`NFC-e: ${nfceStr}`, `Serie: ${serieStr}`)))
-    add(t(dtStr))
-    add(t(sep('-')))
+    add(CMD_ALIGN_C, qrEscPos(qrUrl, 4), CMD_ALIGN_L)
+    add(CMD_BOLD_ON, t(`NFC-E: ${nfceStr}`), CMD_BOLD_OFF)
     add(t('Protocolo de Autorizacao:'))
     add(t(center(protoStr)))
     add(t(center(dtStr)))
@@ -755,7 +750,7 @@ function secaoQRProtocolo({ protocolo, nfce, serie, dataHora }) {
 
 function montarCupomESCPOS({
   empresa, itens, total, forma_pagamento, cpf,
-  chaveAcesso = '', protocolo = '', nfce = '', serie = '',
+  chaveAcesso = '', protocolo = '', nfce = '', urlQrcode = '',
 }) {
   const parts = []
   const add = (...bufs) => bufs.forEach(b => parts.push(b))
@@ -809,10 +804,10 @@ function montarCupomESCPOS({
 
   // ── QR Code (esq.) + Protocolo/Data (dir.) em Page Mode ──────────────────
   add(secaoQRProtocolo({
-    protocolo: protocolo || '0'.repeat(15),
-    nfce:      nfce      || '000000',
-    serie:     serie     || '001',
-    dataHora:  NFCE_HABILITADO ? (protocolo ? fmtDatetime(agora) : null) : fmtDatetime(agora),
+    protocolo:  protocolo || '0'.repeat(15),
+    nfce:       nfce      || '000000',
+    dataHora:   NFCE_HABILITADO ? (protocolo ? fmtDatetime(agora) : null) : fmtDatetime(agora),
+    urlQrcode:  urlQrcode,
   }))
 
   // ── Finalização ───────────────────────────────────────────────────────────
@@ -864,7 +859,7 @@ router.post('/teste', async (_req, res) => {
 
 router.post('/cupom', async (req, res) => {
   const { itens, total, forma_pagamento, cpf = '',
-          chaveAcesso = '', protocolo = '', nfce = '', serie = '' } = req.body
+          chaveAcesso = '', protocolo = '', nfce = '', urlQrcode = '' } = req.body
 
   if (!Array.isArray(itens) || itens.length === 0)
     return res.status(400).json({ ok: false, erro: 'itens é obrigatório' })
@@ -897,7 +892,7 @@ router.post('/cupom', async (req, res) => {
 
   // Monta bytes ESC/POS e envia raw para a impressora
   const cupomBuf = montarCupomESCPOS({ empresa, itens, total: Number(total), forma_pagamento, cpf,
-                                       chaveAcesso, protocolo, nfce, serie })
+                                       chaveAcesso, protocolo, nfce, urlQrcode })
 
   try {
     const saida = await psRaw(cupomBuf)

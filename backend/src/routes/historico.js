@@ -92,6 +92,15 @@ router.post('/grava-itens', async (req, res) => {
   try {
     const erpResult = await gravarItensERP({ id, nrMesa, consumo })
     console.log('[GravaItens] Retorno do ERP:', JSON.stringify(erpResult))
+
+    // ERP pode retornar HTTP 200 com objeto de erro interno
+    const primeiro = Array.isArray(erpResult) ? erpResult[0] : erpResult
+    if (primeiro?.erro === true) {
+      const msg = primeiro.erro_message || 'ERP recusou o registro do item'
+      console.warn('[GravaItens] ERP retornou erro lógico:', msg)
+      return res.status(502).json({ erro: msg })
+    }
+
     return res.json({ ok: true, erp: erpResult })
   } catch (err) {
     console.error('[GravaItens] Erro:', err.message)

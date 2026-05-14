@@ -12,7 +12,7 @@ export const useCarrinhoStore = create((set, get) => ({
   adicionarItem(produto, quantidade = 1) {
     const novoItem = {
       ...produto,
-      id: produto.id || crypto.randomUUID(),
+      id:         produto.id || crypto.randomUUID(),
       quantidade: Math.max(1, Math.floor(quantidade)),
     }
     set(state => ({ itens: [...state.itens, novoItem] }))

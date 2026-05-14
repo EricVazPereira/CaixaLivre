@@ -31,6 +31,7 @@ function requisitarERP(method, path, body = null, timeoutMs = 10_000) {
       res.setEncoding('utf8');
       res.on('data', chunk => { data += chunk; });
       res.on('end', () => {
+        console.log(`[ERP] ${method} ${path} → HTTP ${res.statusCode} | ${data}`);
         if (res.statusCode < 200 || res.statusCode >= 300)
           return reject(new Error(`ERP ${path} → HTTP ${res.statusCode}: ${data}`));
         try {
@@ -103,7 +104,7 @@ async function gravarItensERP({ id = '', nrMesa = '', consumo = [] }) {
       Cod_pro:   String(item.produto_codigo).padStart(14, '0'),
       Obs_pro:   item.obs || '',
       Qtde_pro:  String(item.quantidade),
-      Vl_Pro:    Number(item.vl_unitario).toFixed(2),
+      Vl_Pro:    (Number(item.vl_unitario) * Number(item.quantidade)).toFixed(2),
       Acomp_Pro: '',
     })),
   }, 30_000);

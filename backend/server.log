@@ -1,28 +1,40 @@
-[config] API ERP → http://192.168.0.18:81 (host: 192.168.0.18, porta: 81)
+[config] API ERP → http://192.168.0.130:81 (host: 192.168.0.130, porta: 81)
 [config] Agente porta → 3002
-[config] Estação → ERIC
-[config] Firebird → localhost | c:\fenix\bd\orestra.fdb | usuário: POINTER
-[config] NFC-e → desabilitado
-✅ Estação ERIC encontrada no Firebird
-node:events:486
-      throw er; // Unhandled 'error' event
-      ^
-
-Error: listen EADDRINUSE: address already in use :::3001
-    at Server.setupListenHandle [as _listen2] (node:net:1940:16)
-    at listenInCluster (node:net:1997:12)
-    at Server.listen (node:net:2102:7)
-    at app.listen (D:\CaixaLivre\backend\node_modules\express\lib\application.js:635:24)
-    at D:\CaixaLivre\backend\src\server.js:82:9
-    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
-Emitted 'error' event on Server instance at:
-    at emitErrorNT (node:net:1976:8)
-    at process.processTicksAndRejections (node:internal/process/task_queues:89:21) {
-  code: 'EADDRINUSE',
-  errno: -4091,
-  syscall: 'listen',
-  address: '::',
-  port: 3001
-}
-
-Node.js v24.13.1
+[config] Estação → DEVELOP
+[config] Firebird → 192.168.0.9 | f:\fenix\bd\fenix.fdb | usuário: POINTER
+[config] NFC-e → HABILITADO
+[balanca] Habilitar=SIM
+[balanca] COM8 | 9600 bps | 8N1
+[impressora] WinSpool DLL encontrado ✓
+✅ Estação DEVELOP encontrada no Firebird
+✅ Backend CaixaLivre rodando em http://localhost:3001
+🗄️  Banco: Firebird — f:\fenix\bd\fenix.fdb
+[impressora] Impressora padrão: "cupom" ✓
+[balanca] Teste de comunicação: ✅ OK
+[balanca] Teste de comunicação: ❌ Sem resposta
+[ERP] POST /datasnap/rest/TSM/VerficaCxAberto → HTTP 200 | {"retorno":"1"}
+[VerficaCxAberto] resposta bruta: {"retorno":"1"} | estação: DEVELOP
+[ERP] POST /datasnap/rest/TSM/VerficaCxAberto → HTTP 200 | {"retorno":"1"}
+[VerficaCxAberto] resposta bruta: {"retorno":"1"} | estação: DEVELOP
+[ERP] GET /datasnap/rest/TSM/ConsultaFormatoProduto/00000000000002 → HTTP 200 | {"cod_pro":"00000000000002","ds_pro":"PRODUTO DOIS","formato_pro":"519","fl_ativo":"1","un_pro":"UN","vl_venda":"1,00"}
+[produtos] ConsultaFormatoProduto raw (00000000000002): {"cod_pro":"00000000000002","ds_pro":"PRODUTO DOIS","formato_pro":"519","fl_ativo":"1","un_pro":"UN","vl_venda":"1,00"}
+[balanca/medir] baseline: 0g
+[balanca/medir] leitura: 1042g — aguardando 5s de estabilidade…
+[balanca/medir] estabilizado: 1042g | baseline: 0g | delta: 1042g
+[balanca] /medir (estab=5000ms) → { ok: true, peso_gramas: 1042, peso_absoluto: 1042 }
+[ERP] POST /datasnap/rest/TSM/GravaItens → HTTP 200 | [{"name":"PRODUTO DOIS","total_price":2,"id":"00000000000002","barcode":"002196","service":0,"amount":"2.000","description":"PRODUTO DOIS 519 ","unit_price":1,"unidade":"UN","contador":"0001","pendente_de_confirmacao":"0"}]
+[GravaItens] Retorno do ERP: [{"name":"PRODUTO DOIS","total_price":2,"id":"00000000000002","barcode":"002196","service":0,"amount":"2.000","description":"PRODUTO DOIS 519 ","unit_price":1,"unidade":"UN","contador":"0001","pendente_de_confirmacao":"0"}]
+[ERP] GET /datasnap/rest/TSM/ConsultaFormatoProduto/00000000000002 → HTTP 200 | {"cod_pro":"00000000000002","ds_pro":"PRODUTO DOIS","formato_pro":"519","fl_ativo":"1","un_pro":"UN","vl_venda":"1,00"}
+[produtos] ConsultaFormatoProduto raw (00000000000002): {"cod_pro":"00000000000002","ds_pro":"PRODUTO DOIS","formato_pro":"519","fl_ativo":"1","un_pro":"UN","vl_venda":"1,00"}
+[balanca/medir] baseline: 1042g
+[balanca/medir] leitura: 1560g — aguardando 1s de estabilidade…
+[balanca/medir] estabilizado: 1560g | baseline: 1042g | delta: 518g
+[balanca] /medir (estab=1000ms) → { ok: true, peso_gramas: 518, peso_absoluto: 1560 }
+[ERP] POST /datasnap/rest/TSM/GravaItens → HTTP 200 | [{"name":"PRODUTO DOIS","total_price":2,"id":"00000000000002","barcode":"002196","service":0,"amount":"2.000","description":"PRODUTO DOIS 519 ","unit_price":1,"unidade":"UN","contador":"0001","pendente_de_confirmacao":"0"},{"name":"PRODUTO DOIS","total_price":1,"id":"00000000000002","barcode":"002196","service":0,"amount":"1.000","description":"PRODUTO DOIS 519 ","unit_price":1,"unidade":"UN","contador":"0002","pendente_de_confirmacao":"0"}]
+[GravaItens] Retorno do ERP: [{"name":"PRODUTO DOIS","total_price":2,"id":"00000000000002","barcode":"002196","service":0,"amount":"2.000","description":"PRODUTO DOIS 519 ","unit_price":1,"unidade":"UN","contador":"0001","pendente_de_confirmacao":"0"},{"name":"PRODUTO DOIS","total_price":1,"id":"00000000000002","barcode":"002196","service":0,"amount":"1.000","description":"PRODUTO DOIS 519 ","unit_price":1,"unidade":"UN","contador":"0002","pendente_de_confirmacao":"0"}]
+[balanca/peso-estavel] estável: 1560g
+[ERP] POST /datasnap/rest/TSM/FechamentoComandaSmartPDV → HTTP 200 | {"message_sucess":"Comanda 002196 fechada com sucesso.","sucess":true,"id_sucess":0,"id_comanda":0,"chave_acesso_comanda":"35260504548702000165650010000011209000011217","url_qrcode":"https:\/\/www.nfce.fazenda.sp.gov.br\/qrcode?p=35260504548702000165650010000011209000011217|2|1|14|3.00|772b5973665133544a37676b756b636e3158734273654c4636694d3d|1|49F73F0E0EF603763AB49E17C0723126029B3C52","nr_nfce":"001120","nr_protocolo_nfce":"135263252821831"}
+[FechamentoComandaSmartPDV] Resposta do ERP: {"message_sucess":"Comanda 002196 fechada com sucesso.","sucess":true,"id_sucess":0,"id_comanda":0,"chave_acesso_comanda":"35260504548702000165650010000011209000011217","url_qrcode":"https://www.nfce.fazenda.sp.gov.br/qrcode?p=35260504548702000165650010000011209000011217|2|1|14|3.00|772b5973665133544a37676b756b636e3158734273654c4636694d3d|1|49F73F0E0EF603763AB49E17C0723126029B3C52","nr_nfce":"001120","nr_protocolo_nfce":"135263252821831"}
+[ERP] GET /datasnap/rest/TSM/PegaDadosEmpresa → HTTP 200 | {"CNPJ":"04548702000165","IE":"244880842117","Cidade":"CAMPINAS","UF":"SP","Rua":"RUA ARNALDO BARRETO","Numero":"1050","Complemento":"","Bairro":"SAO BERNARDO","Cep":"13030420","Telefone":"1932320292","Nome Fantasia":"NEWPOINTER","Razao Social":"NEWPOINTER TECNOLOGIA LTDA"}
+[impressora] PegaDadosEmpresa raw: {"CNPJ":"04548702000165","IE":"244880842117","Cidade":"CAMPINAS","UF":"SP","Rua":"RUA ARNALDO BARRETO","Numero":"1050","Complemento":"","Bairro":"SAO BERNARDO","Cep":"13030420","Telefone":"1932320292","Nome Fantasia":"NEWPOINTER","Razao Social":"NEWPOINTER TECNOLOGIA LTDA"}
+[impressora] Cupom impresso ✓ — 2 item(ns), total R$ 3,00

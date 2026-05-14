@@ -8,6 +8,7 @@ const contasRouter     = require('./routes/contas')
 const historicoRouter  = require('./routes/historico')
 const impressoraRouter = require('./routes/impressora')
 const authRouter       = require('./routes/auth')
+const balancaRouter    = require('./routes/balanca')
 
 const app  = express()
 const PORT = SERVIDOR_PORTA
@@ -15,6 +16,7 @@ const PORT = SERVIDOR_PORTA
 app.use(cors({ origin: /^http:\/\/localhost(:\d+)?$/ }))
 app.use(express.json())
 
+app.use('/api/balanca',    balancaRouter)
 app.use('/api/produtos',   produtosRouter)
 app.use('/api/contas',     contasRouter)
 app.use('/api/historico',  historicoRouter)

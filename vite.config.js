@@ -27,9 +27,7 @@ export default defineConfig({
   plugins: [react()],
   server: {
     proxy: {
-      // Balança → agente local (hardware do totem)
-      '/api/balanca': { target: `http://localhost:${agentePorta}`, changeOrigin: true },
-      // Tudo mais → servidor central
+      // Tudo → servidor central (balança incluída, mesma porta)
       '/api': { target: 'http://localhost:3001', changeOrigin: true },
     },
   },

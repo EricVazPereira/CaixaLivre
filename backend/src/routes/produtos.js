@@ -22,7 +22,9 @@ router.get('/:codigo', async (req, res) => {
     const codigo = pad14(req.params.codigo);
     const p = await consultaFormatoProduto(codigo);
 
-    if (!p || p['fl_ativo'] === '0') {
+    console.log(`[produtos] ConsultaFormatoProduto raw (${codigo}):`, JSON.stringify(p))
+
+    if (!p || p['fl_ativo'] === '0' || !p['cod_pro']) {
       return res.status(404).json({ erro: 'Produto não encontrado' });
     }
 
