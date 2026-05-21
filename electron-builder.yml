@@ -5,6 +5,11 @@ copyright: Copyright © 2025 CaixaLivre
 directories:
   output: release
 
+# ── Apenas idiomas necessários (~10 MB a menos de locale paks) ───────────────
+electronLanguages:
+  - pt-BR
+  - en-US
+
 # ── O que vai DENTRO do asar (código do processo principal) ───────────────────
 files:
   - electron/**
@@ -18,13 +23,20 @@ files:
 
 # ── Recursos fora do asar (backend, frontend compilado, configuração) ─────────
 extraResources:
-  # Backend completo com node_modules (módulos nativos funcionam fora do asar)
+  # Backend completo com node_modules
+  # Exclui artefatos de compilação e debug que não servem em produção
   - from: backend
     to: backend
     filter:
       - "**/*"
       - "!node_modules/.cache/**"
       - "!**/*.map"
+      - "!**/*.pdb"
+      - "!**/*.obj"
+      - "!**/*.iobj"
+      - "!**/*.ipdb"
+      - "!**/*.exp"
+      - "!**/*.lib"
 
   # Frontend React compilado (servido pelo Express como static)
   - from: dist
@@ -46,6 +58,8 @@ win:
     - target: nsis
       arch: [x64]
 
+compression: maximum
+
 nsis:
   oneClick: false
   allowToChangeInstallationDirectory: false
@@ -54,5 +68,7 @@ nsis:
   createStartMenuShortcut: true
   shortcutName: CaixaLivre
   deleteAppDataOnUninstall: false
+
+afterPack: scripts/after-pack.cjs
 
 publish: null

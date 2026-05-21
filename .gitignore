@@ -1,0 +1,44 @@
+# ── Dependências ────────────────────────────────────────────────
+node_modules/
+backend/node_modules/
+
+# ── Build do frontend (Vite) ────────────────────────────────────
+dist/
+
+# ── Binários gerados pelo electron-builder ──────────────────────
+release/
+
+# ── Arquivos nativos compilados ─────────────────────────────────
+*.node
+*.pdb
+*.iobj
+*.ipdb
+*.obj
+*.exp
+*.lib
+*.tlog
+
+# ── Logs ────────────────────────────────────────────────────────
+*.log
+logs/
+
+# ── Configuração local (contém IP/porta do servidor) ────────────
+# Mantenha Network.ini.template no repositório como referência.
+Network.ini
+
+# ── Cache Vite / editor ─────────────────────────────────────────
+.vite/
+.cache/
+*.local
+
+# ── Sistema operacional ─────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ── Claude Code (settings locais) ───────────────────────────────
+.claude/
+
+# ── Variáveis de ambiente ────────────────────────────────────────
+.env
+.env.*

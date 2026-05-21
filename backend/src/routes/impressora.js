@@ -1,23 +1,31 @@
 const { Router } = require('express')
-const { exec, spawn } = require('child_process')
+const { exec }   = require('child_process')   // apenas para descobrir impressora padrão e rota /teste
+const koffi      = require('koffi')
 const fs         = require('fs')
 const path       = require('path')
 const os         = require('os')
 const QRCode     = require('qrcode')
-const { NFCE_HABILITADO } = require('../config')
+const { NFCE_HABILITADO, IMPRESSORA_NOME } = require('../config')
 const { pegaDadosEmpresa } = require('../erp')
 
 const router = Router()
 
-// ── PowerShell helpers ────────────────────────────────────────────────────────
+// ── Log em arquivo (visível mesmo no .exe empacotado) ─────────────────────────
+const LOG_FILE = path.join(os.tmpdir(), 'caixalivre-impressora.log')
 
-/** Executa script PowerShell via EncodedCommand (UTF-16LE) */
+function logPrint(msg) {
+  const line = `[${new Date().toISOString()}] ${msg}\n`
+  process.stdout.write('[impressora] ' + msg + '\n')
+  try { fs.appendFileSync(LOG_FILE, line) } catch (_) {}
+}
+
+// ── PowerShell helper — só para descoberta da impressora padrão e rota /teste ─
 function ps(script) {
   return new Promise((resolve, reject) => {
     const encoded = Buffer.from(script, 'utf16le').toString('base64')
     exec(
       `powershell -NoProfile -NonInteractive -EncodedCommand ${encoded}`,
-      { timeout: 20000 },
+      { timeout: 15000 },
       (err, stdout, stderr) => {
         if (err) return reject(new Error(stderr?.trim() || err.message))
         resolve((stdout || '').trim())
@@ -26,46 +34,119 @@ function ps(script) {
   })
 }
 
-// C# para envio de bytes raw via Windows Spooler API
-const WINSPOOL_CS = [
-  'using System;',
-  'using System.Runtime.InteropServices;',
-  'public class WinSpool {',
-  '  [DllImport("winspool.drv", CharSet=CharSet.Unicode)]',
-  '  public static extern bool OpenPrinter(string n, out IntPtr h, IntPtr d);',
-  '  [DllImport("winspool.drv")]',
-  '  public static extern bool ClosePrinter(IntPtr h);',
-  '  [DllImport("winspool.drv", CharSet=CharSet.Unicode)]',
-  '  public static extern int StartDocPrinter(IntPtr h, int lv, ref DocInfo di);',
-  '  [DllImport("winspool.drv")]',
-  '  public static extern bool EndDocPrinter(IntPtr h);',
-  '  [DllImport("winspool.drv")]',
-  '  public static extern bool StartPagePrinter(IntPtr h);',
-  '  [DllImport("winspool.drv")]',
-  '  public static extern bool EndPagePrinter(IntPtr h);',
-  '  [DllImport("winspool.drv")]',
-  '  public static extern bool WritePrinter(IntPtr h, IntPtr p, int n, out int w);',
-  '  [StructLayout(LayoutKind.Sequential, CharSet=CharSet.Unicode)]',
-  '  public struct DocInfo {',
-  '    [MarshalAs(UnmanagedType.LPWStr)] public string pDocName;',
-  '    [MarshalAs(UnmanagedType.LPWStr)] public string pOutputFile;',
-  '    [MarshalAs(UnmanagedType.LPWStr)] public string pDatatype;',
-  '  }',
-  '}',
-].join('\n')
+// ── WinSpool nativo via koffi ─────────────────────────────────────────────────
+// Chama winspool.drv diretamente, sem PowerShell, sem Add-Type, sem C# em runtime.
+// koffi inclui binários pré-compilados para Electron — não precisa de electron-rebuild.
+//
+// Notas de uso do koffi v3 (obtidas empiricamente):
+//   • void** de saída → Buffer.alloc(8) + koffi.decode(buf, 'void *')
+//   • void* nulo     → koffi.as(0, 'void *')
+//   • uint32* saída  → Buffer.alloc(4) + buf.readUInt32LE(0)
+//   • str16 em struct → funciona; para null usar string vazia ''
+
+let _wsOk    = false
+let _GetLastError
+let _OpenPrinterW, _ClosePrinter, _StartDocPrinterW
+let _EndDocPrinter, _StartPagePrinter, _EndPagePrinter, _WritePrinter
+let _DocInfo1W
+let _NULL_PTR   // koffi.as(0, 'void *') — ponteiro nulo tipado
+
+try {
+  const ws  = koffi.load('winspool.drv')
+  const k32 = koffi.load('kernel32.dll')
+
+  _GetLastError = k32.func('uint32 GetLastError()')
+  _NULL_PTR     = koffi.as(0, 'void *')
+
+  // DOC_INFO_1W — todos os campos str16 (koffi ↔ char16_t*)
+  // pOutputFile deve ser NULL no Windows mas koffi v3 não aceita null em str16;
+  // passar '' (string vazia) é equivalente e aceito pelo driver Epson.
+  _DocInfo1W = koffi.struct('DOC_INFO_1W', {
+    pDocName:    'str16',
+    pOutputFile: 'str16',
+    pDatatype:   'str16',
+  })
+
+  // Funções winspool.drv (Unicode — sufixo W)
+  _OpenPrinterW     = ws.func('bool OpenPrinterW(str16 pPrinterName, void** phPrinter, void* pDefault)')
+  _ClosePrinter     = ws.func('bool ClosePrinter(void* hPrinter)')
+  _StartDocPrinterW = ws.func('int32 StartDocPrinterW(void* hPrinter, uint32 Level, DOC_INFO_1W* pDocInfo)')
+  _EndDocPrinter    = ws.func('bool EndDocPrinter(void* hPrinter)')
+  _StartPagePrinter = ws.func('bool StartPagePrinter(void* hPrinter)')
+  _EndPagePrinter   = ws.func('bool EndPagePrinter(void* hPrinter)')
+  // pcWritten declarado como void* — vamos passar um Buffer.alloc(4) e ler manualmente
+  _WritePrinter     = ws.func('bool WritePrinter(void* hPrinter, uint8_t* pBuf, uint32 cbBuf, void* pcWritten)')
+
+  _wsOk = true
+  logPrint('WinSpool carregado via koffi ✓')
+} catch (e) {
+  logPrint('ERRO koffi/WinSpool: ' + e.message)
+}
 
 /**
- * Caminho do DLL pré-compilado do helper WinSpool.
- * Compilado uma vez, carregado rapidamente em todas as impressões seguintes.
+ * Envia `data` (Buffer ESC/POS) para `printerName` via WinSpool nativo.
+ * O spooler aceita o job imediatamente e retorna; o driver imprime em background.
+ * Tempo típico: < 5 ms (sem PowerShell, sem Add-Type).
+ * @returns {number} bytes escritos
  */
-const WINSPOOL_DLL = path.join(os.tmpdir(), 'CaixaLivreWinSpool.dll')
+function rawPrint(printerName, data) {
+  if (!_wsOk) throw new Error('WinSpool não disponível — veja o log de startup')
 
-/** Nome da impressora padrão cacheado no startup — evita Get-CimInstance a cada impressão */
-let cachedPrinterName = null
+  // Buffer de 8 bytes recebe o HANDLE (ponteiro de 64 bits)
+  const hBuf = Buffer.alloc(8)
+  if (!_OpenPrinterW(printerName, hBuf, _NULL_PTR)) {
+    const code = _GetLastError ? _GetLastError() : '?'
+    throw new Error(`OpenPrinterW falhou para "${printerName}" (Win32 err=${code})`)
+  }
+  const h = koffi.decode(hBuf, 'void *')
+
+  try {
+    const doc    = { pDocName: 'CupomCaixaLivre', pOutputFile: '', pDatatype: 'RAW' }
+    const jobId  = _StartDocPrinterW(h, 1, doc)
+    if (jobId <= 0) {
+      const code = _GetLastError ? _GetLastError() : '?'
+      throw new Error(`StartDocPrinterW falhou (Win32 err=${code})`)
+    }
+
+    _StartPagePrinter(h)
+
+    // Buffer de 4 bytes recebe o count de bytes escritos (uint32)
+    const wBuf = Buffer.alloc(4)
+    _WritePrinter(h, data, data.length, wBuf)
+    const bytesWritten = wBuf.readUInt32LE(0)
+
+    _EndPagePrinter(h)
+    _EndDocPrinter(h)
+
+    logPrint(`rawPrint ✓  ${bytesWritten} bytes → "${printerName}" (jobId=${jobId})`)
+    return bytesWritten
+  } finally {
+    _ClosePrinter(h)
+  }
+}
+
+// Interface async para os handlers Express
+function psRaw(cupomBuffer) {
+  return new Promise((resolve, reject) => {
+    const pn = cachedPrinterName
+    logPrint(`psRaw: ${cupomBuffer.length} bytes → "${pn || '(sem impressora)'}"`)
+    if (!pn) return reject(new Error('Impressora não configurada — defina [Impressora] Nome= no Network.ini'))
+    try {
+      const w = rawPrint(pn, cupomBuffer)
+      resolve(`OK:${w}`)
+    } catch (e) {
+      logPrint('psRaw ERRO: ' + e.message)
+      reject(e)
+    }
+  })
+}
+
+// ── Nome da impressora ────────────────────────────────────────────────────────
+// Lido do Network.ini ou, como fallback, descoberto via PS no startup.
+
+let cachedPrinterName = IMPRESSORA_NOME || null
 
 // ── Cache dos dados da empresa ────────────────────────────────────────────────
-// Buscado uma única vez via ERP e reutilizado em todas as impressões.
-// Invalidado apenas ao reiniciar o servidor.
 
 let empresaCache = null
 
@@ -85,209 +166,51 @@ async function buscarEmpresaComCache() {
     CEP:             api['Cep']           || '',
     TELEFONE:        api['Telefone']      || '',
   }
-  console.log('[impressora] Dados da empresa em cache ✓')
+  logPrint('Dados da empresa em cache ✓')
   return empresaCache
 }
 
-// ── Sessão PowerShell persistente ────────────────────────────────────────────
-// Um único processo PowerShell fica vivo. Comandos são enviados via stdin e
-// o resultado lido via stdout. Elimina o custo de startup (~400-600ms) por
-// impressão. Em caso de falha, reinicia automaticamente após 2s.
+// ── Startup ───────────────────────────────────────────────────────────────────
 
-let psSession     = null   // ChildProcess
-let psSessionBuf  = ''     // buffer de stdout acumulado
-let psSessionPend = []     // { sentinel, resolve, reject }[]
-
-function psSessionFlush() {
-  while (psSessionPend.length > 0) {
-    const { sentinel, resolve } = psSessionPend[0]
-    const idx = psSessionBuf.indexOf(sentinel)
-    if (idx === -1) break
-    const saida = psSessionBuf.slice(0, idx).replace(/\r\n/g, '\n').trimEnd()
-    psSessionBuf = psSessionBuf.slice(idx + sentinel.length)
-    // descarta newlines após o sentinel
-    while (psSessionBuf[0] === '\r' || psSessionBuf[0] === '\n') psSessionBuf = psSessionBuf.slice(1)
-    psSessionPend.shift()
-    resolve(saida)
-  }
-}
-
-function psSessionExec(script) {
-  if (!psSession || psSession.exitCode !== null) {
-    return Promise.reject(new Error('[PS] sessão não disponível'))
-  }
-  return new Promise((resolve, reject) => {
-    const sentinel = `__PSDONE_${Date.now().toString(36)}_${Math.random().toString(36).slice(2)}__`
-    psSessionPend.push({ sentinel, resolve, reject })
-    psSession.stdin.write(`${script}\nWrite-Output '${sentinel}'\n`, 'utf8')
-  })
-}
-
-async function iniciarSessaoPS() {
-  psSession    = spawn('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', '-'], { stdio: ['pipe', 'pipe', 'pipe'] })
-  psSessionBuf = ''
-
-  psSession.stdout.on('data', chunk => {
-    psSessionBuf += chunk.toString('utf8')
-    psSessionFlush()
-  })
-  psSession.stderr.on('data', chunk =>
-    console.warn('[PS sessão]', chunk.toString('utf8').trim())
-  )
-  psSession.on('exit', code => {
-    console.warn(`[impressora] Sessão PS encerrada (code ${code}) — reiniciando em 2s…`)
-    psSession = null
-    for (const p of psSessionPend) p.reject(new Error('Sessão PS reiniciada'))
-    psSessionPend = []
-    psSessionBuf  = ''
-    setTimeout(() => iniciarSessaoPS().catch(e => console.error('[impressora] Falha ao reiniciar sessão PS:', e.message)), 2000)
-  })
-
-  // Carrega DLL e define impressora uma vez só para toda a sessão
-  const loadCmd    = fs.existsSync(WINSPOOL_DLL)
-    ? `Add-Type -Path '${WINSPOOL_DLL}' -EA SilentlyContinue`
-    : `Add-Type -TypeDefinition '${WINSPOOL_CS}' -Language CSharp -EA SilentlyContinue`
-  const printerCmd = cachedPrinterName ? `\n$global:pn = '${cachedPrinterName}'` : ''
-  await psSessionExec(loadCmd + printerCmd)
-  console.log('[impressora] Sessão PS persistente iniciada ✓')
-}
-
-/**
- * Pré-aquece em background assim que o módulo carrega:
- *   1. Compila/verifica o DLL WinSpool (elimina Add-Type lento)
- *   2. Cacheia o nome da impressora padrão (elimina Get-CimInstance por impressão)
- */
 setImmediate(async () => {
-  // ── 1. DLL ──────────────────────────────────────────────────────────────
-  if (fs.existsSync(WINSPOOL_DLL)) {
-    console.log('[impressora] WinSpool DLL encontrado ✓')
+  logPrint(`=== Startup impressora — log: ${LOG_FILE} ===`)
+
+  if (cachedPrinterName) {
+    logPrint(`Impressora via INI: "${cachedPrinterName}" ✓`)
   } else {
-    console.log('[impressora] Compilando WinSpool DLL (apenas na primeira execução)…')
+    // Fallback: consulta o Windows via PS (única chamada PS no ciclo de vida)
     try {
-      await ps(`Add-Type -TypeDefinition '${WINSPOOL_CS}' -Language CSharp -OutputAssembly '${WINSPOOL_DLL}' -ErrorAction Stop\nWrite-Output 'ok'`)
-      console.log('[impressora] WinSpool DLL compilado e salvo ✓')
+      const nome = await ps(
+        `(Get-CimInstance Win32_Printer | Where-Object { $_.Default } | Select-Object -First 1).Name`
+      )
+      cachedPrinterName = nome.trim()
+      logPrint(`Impressora padrão (Windows): "${cachedPrinterName}" ✓`)
     } catch (e) {
-      console.warn('[impressora] Pré-compilação falhou (usará compilação inline):', e.message)
+      logPrint('ERRO descobrir impressora: ' + e.message)
     }
   }
 
-  // ── 2. Nome da impressora padrão ─────────────────────────────────────────
-  try {
-    const nome = await ps(`(Get-CimInstance Win32_Printer | Where-Object { $_.Default }).Name | Select-Object -First 1`)
-    cachedPrinterName = nome.trim()
-    console.log(`[impressora] Impressora padrão: "${cachedPrinterName}" ✓`)
-  } catch (e) {
-    console.warn('[impressora] Não foi possível pré-carregar impressora:', e.message)
+  if (!cachedPrinterName) {
+    logPrint('AVISO: impressora não configurada. Defina [Impressora] Nome= no Network.ini')
   }
 
-  // ── 3. Sessão PS persistente (DLL já compilada, impressora já cacheada) ──
+  // ── Logo em memória ───────────────────────────────────────────────────────
   try {
-    await iniciarSessaoPS()
+    if (fs.existsSync(LOGO_PATH)) {
+      const raw = loadBmpPixels(LOGO_PATH)
+      cachedLogoPx = scaleBitmapToWidth(raw, LOGO_FIXED_W)
+      logPrint(`Logo carregado: ${LOGO_PATH} (${raw.width}×${raw.height} → ${LOGO_FIXED_W}px) ✓`)
+    } else {
+      logPrint(`Logo não encontrado em: ${LOGO_PATH} (cupom imprimirá sem logo)`)
+    }
   } catch (e) {
-    console.warn('[impressora] Sessão PS não iniciada (usará exec por impressão):', e.message)
+    logPrint(`ERRO ao carregar logo: ${e.message}`)
   }
 
-  // ── 4. Pré-aquece dados da empresa (elimina chamada ERP na primeira impressão) ──
-  try {
-    await buscarEmpresaComCache()
-  } catch (e) {
-    console.warn('[impressora] Não foi possível pré-carregar empresa:', e.message)
+  try { await buscarEmpresaComCache() } catch (e) {
+    logPrint('Empresa cache: ' + e.message)
   }
 })
-
-/**
- * Envia bytes raw para a impressora padrão do Windows via WinSpool API.
- * Grava os bytes num arquivo .bin temporário para que o script PS fique
- * curto o suficiente para o EncodedCommand (limite ~8 KB).
- * @param {Buffer} cupomBuffer — bytes ESC/POS prontos
- */
-/**
- * Envia bytes raw para a impressora.
- * Caminho rápido: sessão PS persistente (sem startup, DLL e impressora já carregados).
- * Fallback:       exec powershell (se a sessão ainda não estiver pronta).
- */
-function psRaw(cupomBuffer) {
-  return new Promise((resolve, reject) => {
-    const tmpFile = path.join(os.tmpdir(), `cupom_${Date.now()}.bin`)
-
-    fs.writeFile(tmpFile, cupomBuffer, async (writeErr) => {
-      if (writeErr) return reject(writeErr)
-
-      // ── Caminho rápido: sessão persistente ────────────────────────────────
-      if (psSession && psSession.exitCode === null && cachedPrinterName) {
-        const script = [
-          `try {`,
-          `  $bytes = [IO.File]::ReadAllBytes('${tmpFile}')`,
-          `  Remove-Item '${tmpFile}' -EA SilentlyContinue`,
-          `  $h = [IntPtr]::Zero`,
-          `  if (![WinSpool]::OpenPrinter($global:pn, [ref]$h, [IntPtr]::Zero)) { throw "OpenPrinter falhou: $global:pn" }`,
-          `  $di = New-Object WinSpool+DocInfo`,
-          `  $di.pDocName = 'CupomCaixaLivre'; $di.pDatatype = 'RAW'`,
-          `  if ([WinSpool]::StartDocPrinter($h, 1, [ref]$di) -le 0) { [WinSpool]::ClosePrinter($h); throw 'StartDocPrinter falhou' }`,
-          `  [WinSpool]::StartPagePrinter($h) | Out-Null`,
-          `  $ptr = [Runtime.InteropServices.Marshal]::AllocHGlobal($bytes.Length)`,
-          `  [Runtime.InteropServices.Marshal]::Copy($bytes, 0, $ptr, $bytes.Length)`,
-          `  $w = 0`,
-          `  [WinSpool]::WritePrinter($h, $ptr, $bytes.Length, [ref]$w) | Out-Null`,
-          `  [Runtime.InteropServices.Marshal]::FreeHGlobal($ptr)`,
-          `  [WinSpool]::EndPagePrinter($h) | Out-Null`,
-          `  [WinSpool]::EndDocPrinter($h) | Out-Null`,
-          `  [WinSpool]::ClosePrinter($h) | Out-Null`,
-          `  Write-Output "OK:$w"`,
-          `} catch {`,
-          `  Write-Output "ERR:$_"`,
-          `}`,
-        ].join('\n')
-
-        try {
-          const saida = await psSessionExec(script)
-          fs.unlink(tmpFile, () => {})
-          if (saida.startsWith('ERR:')) return reject(new Error(saida.slice(4).trim()))
-          return resolve(saida)
-        } catch (e) {
-          console.warn('[impressora] Sessão PS falhou, usando exec fallback:', e.message)
-          // continua para o fallback abaixo
-        }
-      }
-
-      // ── Fallback: exec powershell (sessão não disponível) ─────────────────
-      const loadType = fs.existsSync(WINSPOOL_DLL)
-        ? `Add-Type -Path '${WINSPOOL_DLL}' -ErrorAction SilentlyContinue`
-        : `Add-Type -TypeDefinition '${WINSPOOL_CS}' -Language CSharp -ErrorAction SilentlyContinue`
-
-      const script = [
-        loadType,
-        `$bytes = [IO.File]::ReadAllBytes('${tmpFile}')`,
-        `Remove-Item '${tmpFile}' -ErrorAction SilentlyContinue`,
-        cachedPrinterName
-          ? `$pn = '${cachedPrinterName}'`
-          : `$pn = (Get-CimInstance Win32_Printer | Where-Object { $_.Default }).Name | Select-Object -First 1`,
-        `if (-not $pn) { throw 'Nenhuma impressora padrao encontrada' }`,
-        `$h = [IntPtr]::Zero`,
-        `if (![WinSpool]::OpenPrinter($pn, [ref]$h, [IntPtr]::Zero)) { throw "OpenPrinter falhou: $pn" }`,
-        `$di = New-Object WinSpool+DocInfo`,
-        `$di.pDocName  = 'CupomCaixaLivre'`,
-        `$di.pDatatype = 'RAW'`,
-        `if ([WinSpool]::StartDocPrinter($h, 1, [ref]$di) -le 0) { [WinSpool]::ClosePrinter($h); throw 'StartDocPrinter falhou' }`,
-        `[WinSpool]::StartPagePrinter($h) | Out-Null`,
-        `$ptr = [Runtime.InteropServices.Marshal]::AllocHGlobal($bytes.Length)`,
-        `[Runtime.InteropServices.Marshal]::Copy($bytes, 0, $ptr, $bytes.Length)`,
-        `$w = 0`,
-        `[WinSpool]::WritePrinter($h, $ptr, $bytes.Length, [ref]$w) | Out-Null`,
-        `[Runtime.InteropServices.Marshal]::FreeHGlobal($ptr)`,
-        `[WinSpool]::EndPagePrinter($h) | Out-Null`,
-        `[WinSpool]::EndDocPrinter($h) | Out-Null`,
-        `[WinSpool]::ClosePrinter($h) | Out-Null`,
-        `Write-Output "OK:$w"`,
-      ].join('\n')
-
-      ps(script)
-        .then(resolve)
-        .catch(reject)
-        .finally(() => fs.unlink(tmpFile, () => {}))
-    })
-  })
-}
 
 // ── ESC/POS — constantes e comandos ──────────────────────────────────────────
 
@@ -467,8 +390,19 @@ const FORMAS = {
 
 const URL_NFCE   = 'https://www.nfce.fazenda.sp.gov.br/NFCeConsultaPublica/Paginas/ConsultaPublica.aspx'
 const PAPER_DOTS = 576   // 80 mm a 203 DPI
-const LOGO_PATH  = path.join(__dirname, '..', '..', '..', 'img', 'logo.bmp')
 const LOGO_FIXED_W = 160  // largura fixa do logo em dots (sempre redimensiona para caber aqui)
+
+// Caminho da pasta de imagens:
+//   - Em produção (Electron): CAIXALIVRE_IMG é definido pelo processo principal
+//     antes de carregar o backend, aponta para <pasta_do_exe>\img\
+//   - Em desenvolvimento (node --watch): usa caminho relativo ao source
+const IMG_DIR   = process.env.CAIXALIVRE_IMG || path.join(__dirname, '..', '..', '..', 'img')
+const LOGO_PATH = path.join(IMG_DIR, 'logo.bmp')
+
+// Cache do logo em pixels — carregado uma vez no startup e mantido em memória.
+// null  = ainda não tentou carregar (ou falhou, sem logo)
+// objeto{ pixels, width, height } = logo carregado e pronto
+let cachedLogoPx = null
 
 // ── Fonte 5×7px — row-major, bit7 = coluna 0 (esquerda) ─────────────────────
 // Cada char: 7 bytes (um por linha). bits 7-3 = colunas 0-4.
@@ -776,15 +710,8 @@ function secaoCabecalho(empresa) {
   const parts = []
   const add   = (...b) => b.forEach(x => parts.push(x))
 
-  // Carrega logo (opcional)
-  let logoPx = null
-  try {
-    if (fs.existsSync(LOGO_PATH)) {
-      logoPx = scaleBitmapToWidth(loadBmpPixels(LOGO_PATH), LOGO_FIXED_W)
-    }
-  } catch (e) {
-    console.warn('[cabecalho] Logo:', e.message)
-  }
+  // Usa o logo já carregado em memória no startup (zero I/O por impressão)
+  const logoPx = cachedLogoPx
 
   const gap       = 12                                      // espaço logo↔texto
   const textAreaW = PAPER_DOTS - (logoPx ? logoPx.width + gap : 0)
@@ -1084,13 +1011,13 @@ router.post('/cupom', async (req, res) => {
   try {
     const saida = await psRaw(cupomBuf)
     if (!saida.startsWith('OK')) {
-      console.warn('[impressora] Impressora recusou:', saida)
+      logPrint(`POST /cupom: impressora recusou: ${saida}`)
       return res.json({ ok: false, erro: saida })
     }
-    console.log(`[impressora] Cupom impresso ✓ — ${itens.length} item(ns), total R$ ${brl(total)}`)
+    logPrint(`POST /cupom: ✓ ${itens.length} item(ns) R$ ${brl(total)} — ${saida}`)
     res.json({ ok: true })
   } catch (e) {
-    console.error('[impressora] POST /cupom', e.message)
+    logPrint(`POST /cupom: ERRO FINAL: ${e.message}`)
     res.status(500).json({ ok: false, erro: e.message })
   }
 })

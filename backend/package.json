@@ -12,6 +12,7 @@
   "dependencies": {
     "cors": "^2.8.5",
     "express": "^4.19.2",
+    "koffi": "^3.0.1",
     "node-firebird": "^2.0.2",
     "node-sqlite3-wasm": "^0.8.27",
     "qrcode": "^1.5.4",

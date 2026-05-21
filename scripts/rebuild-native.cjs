@@ -38,21 +38,31 @@ if (!fs.existsSync(rebuildBin)) {
   process.exit(1)
 }
 
-// Executa o rebuild dentro de backend/ para que ele encontre os node_modules corretos
+// ── serialport (balança) ──────────────────────────────────────────────────────
 try {
   execSync(
     `"${rebuildBin}" -f -w serialport --version ${electronVersion}`,
-    {
-      cwd: path.join(root, 'backend'),
-      stdio: 'inherit',
-      shell: true,
-    }
+    { cwd: path.join(root, 'backend'), stdio: 'inherit', shell: true }
   )
-  console.log('\n✅  Módulos nativos reconstruídos com sucesso.\n')
+  console.log('\n✅  serialport reconstruído com sucesso.\n')
 } catch (e) {
   console.warn('\n⚠️   Rebuild do serialport falhou.')
   console.warn('    O app será empacotado SEM suporte à balança.')
   console.warn('    Para habilitar: instale MSVC Build Tools + Python 3 e repita.\n')
-  // Não falha o build — a balança simplesmente ficará desabilitada no executável
   process.exitCode = 0
+}
+
+// ── koffi (impressora nativa via WinSpool) ────────────────────────────────────
+// koffi já inclui binários pré-compilados para Electron — o rebuild abaixo
+// só é necessário se os binários bundled não forem compatíveis com esta versão.
+try {
+  execSync(
+    `"${rebuildBin}" -f -w koffi --version ${electronVersion}`,
+    { cwd: path.join(root, 'backend'), stdio: 'inherit', shell: true }
+  )
+  console.log('✅  koffi reconstruído com sucesso.\n')
+} catch (e) {
+  // koffi tem binários pré-compilados — falha do rebuild é tolerável
+  console.warn('⚠️   Rebuild do koffi falhou (usará binário pré-compilado bundled).\n')
+  if (process.exitCode !== 1) process.exitCode = 0
 }

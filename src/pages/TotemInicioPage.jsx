@@ -4,6 +4,7 @@ import './TotemInicioPage.css'
 
 export default function TotemInicioPage() {
   const navigate = useNavigate()
+
   return (
     <div className="inicio-root" onClick={() => navigate('/cpf')}>
       <div className="inicio-orb inicio-orb-1" />
@@ -13,7 +14,7 @@ export default function TotemInicioPage() {
       <div className="inicio-btns-admin">
         <button
           className="inicio-btn-fechar"
-          onClick={e => { e.stopPropagation(); navigate('/fechar') }}
+          onClick={e => { e.stopPropagation(); navigate('/confirmar-gerente?acao=fechar') }}
           title="Fechar Caixa"
           aria-label="Fechar Caixa"
         >
@@ -22,7 +23,7 @@ export default function TotemInicioPage() {
 
         <button
           className="inicio-btn-fechar inicio-btn-sair"
-          onClick={e => { e.stopPropagation(); window.close() }}
+          onClick={e => { e.stopPropagation(); navigate('/confirmar-gerente?acao=sair') }}
           title="Sair"
           aria-label="Sair do sistema"
         >

@@ -11,7 +11,7 @@
  *  6. Encerrar tudo limpo ao fechar o app
  */
 
-const { app, BrowserWindow, dialog, ipcMain } = require('electron')
+const { app, BrowserWindow, dialog, ipcMain, globalShortcut } = require('electron')
 const path = require('path')
 const http = require('http')
 
@@ -220,6 +220,12 @@ async function iniciar() {
 
     win.on('closed', () => app.quit())
 
+    // F12 abre/fecha DevTools para diagnóstico (em qualquer build)
+    globalShortcut.register('F12', () => {
+      if (win.webContents.isDevToolsOpened()) win.webContents.closeDevTools()
+      else win.webContents.openDevTools({ mode: 'detach' })
+    })
+
   } catch (err) {
     if (!loadingWin.isDestroyed()) loadingWin.close()
     dialog.showErrorBox(
@@ -236,6 +242,7 @@ app.whenReady().then(iniciar)
 app.on('window-all-closed', () => app.quit())
 
 app.on('before-quit', () => {
+  globalShortcut.unregisterAll()
   console.log('🛑 Encerrando serviços...')
   try {
     if (agenteHandle?.portManager) agenteHandle.portManager.close()

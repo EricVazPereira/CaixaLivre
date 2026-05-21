@@ -1,0 +1,5 @@
+[Servidor]
+URL=http://192.168.0.X:81
+
+[Impressora]
+Nome=Cupom

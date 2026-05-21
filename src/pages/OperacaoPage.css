@@ -262,7 +262,6 @@
   text-overflow: ellipsis;
 }
 .item-qtd, .item-preco, .item-total {
-  font-family: 'JetBrains Mono', monospace;
   font-size: 1rem;
   font-weight: 500;
   color: var(--ink-secondary);

@@ -72,6 +72,12 @@ const NM_ESTACAO = (cfgEstacao['Nome'] || require('os').hostname()).toUpperCase(
 
 console.log(`[config] Estação → ${NM_ESTACAO}`)
 
+// ── Seção [Impressora] — nome da impressora térmica ───────────────────────────
+const cfgImpressora   = lerSecaoIni(INI_PATH, 'Impressora')
+const IMPRESSORA_NOME = (cfgImpressora['Nome'] || '').trim()
+
+console.log(`[config] Impressora → ${IMPRESSORA_NOME || '(padrão do Windows)'}`)
+
 // ── Seção [NFCE] ──────────────────────────────────────────────────────────────
 const cfgNFCE = lerSecaoIni(INI_PATH, 'NFCE')
 // Só habilita quando explicitamente definido como sim/yes/1/true
@@ -91,4 +97,4 @@ console.log(`[config] SiTef → ${SITEF_HABILITADO ? 'HABILITADO' : 'desabilitad
 const SERVIDOR_PORTA = 3001
 
 // ── Exportações ───────────────────────────────────────────────────────────────
-module.exports = { ERP_HOST, ERP_PORT, ERP_HTTPS, API_ENDERECO, ERP_AUTH, AGENTE_PORTA, SERVIDOR_PORTA, NM_ESTACAO, NFCE_HABILITADO, SITEF_HABILITADO, SITEF_DIR_REQ, SITEF_DIR_RESP }
+module.exports = { ERP_HOST, ERP_PORT, ERP_HTTPS, API_ENDERECO, ERP_AUTH, AGENTE_PORTA, SERVIDOR_PORTA, NM_ESTACAO, NFCE_HABILITADO, SITEF_HABILITADO, SITEF_DIR_REQ, SITEF_DIR_RESP, IMPRESSORA_NOME }

@@ -9,7 +9,8 @@ import AutorizacaoPage     from './pages/AutorizacaoPage'
 import PagamentoPage       from './pages/PagamentoPage'
 import ImpressaoCupomPage  from './pages/ImpressaoCupomPage'
 import ConsultaVendasPage  from './pages/ConsultaVendasPage'
-import FechamentoCaixaPage from './pages/FechamentoCaixaPage'
+import FechamentoCaixaPage      from './pages/FechamentoCaixaPage'
+import ConfirmacaoGerentePage   from './pages/ConfirmacaoGerentePage'
 
 function Protegida({ children }) {
   const { caixaAberto } = useCaixaStore()
@@ -38,6 +39,7 @@ export default function App() {
         <Route path="/impressao"   element={<Protegida><ImpressaoCupomPage /></Protegida>} />
         <Route path="/vendas"      element={<Protegida><ConsultaVendasPage /></Protegida>} />
         <Route path="/fechar"      element={<Protegida><FechamentoCaixaPage /></Protegida>} />
+        <Route path="/confirmar-gerente" element={<Protegida><ConfirmacaoGerentePage /></Protegida>} />
         <Route path="*"            element={<Navigate to="/" replace />} />
       </Routes>
     </div>
