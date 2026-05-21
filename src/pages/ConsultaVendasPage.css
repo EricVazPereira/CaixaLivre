@@ -22,7 +22,7 @@
 
 .consulta-header-logo {
   font-family: 'Montserrat', sans-serif;
-  font-size: 1.1rem;
+  font-size: 1.2rem;
   font-weight: 800;
   letter-spacing: -0.04em;
   color: var(--ink-primary);
@@ -31,7 +31,7 @@
 
 .consulta-header-sub {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 9px;
+  font-size: 1rem;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.2em;
@@ -71,7 +71,7 @@
 
 .stat-card-label {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 9px;
+  font-size: 1rem;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.2em;
@@ -89,7 +89,7 @@
 /* ── Lista de cupons ── */
 .cupons-section-title {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 9px;
+  font-size: 1rem;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.2em;
@@ -108,11 +108,19 @@
   text-align: center;
   padding: 3rem;
   color: var(--ink-muted);
-  font-size: 0.95rem;
+  font-size: 1rem;
 }
 .consulta-msg--erro { color: var(--fenix-red); }
 
 /* Cupom card */
+.cupum-card {
+  background: var(--bg-panel);
+  border-radius: var(--radius-lg);
+  border: 1px solid rgba(0,139,195,0.08);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+  transition: box-shadow 0.2s;
+}
 .cupom-card {
   background: var(--bg-panel);
   border-radius: var(--radius-lg);
@@ -135,7 +143,7 @@
 
 .cupom-id {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 0.75rem;
+  font-size: 1rem;
   font-weight: 600;
   color: var(--ink-muted);
   background: var(--bg-subtle);
@@ -152,13 +160,13 @@
   flex: 1;
 }
 .cupom-data {
-  font-size: 0.82rem;
+  font-size: 1rem;
   font-weight: 600;
   color: var(--ink-secondary);
 }
 .cupom-forma {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 9px;
+  font-size: 1rem;
   font-weight: 500;
   text-transform: uppercase;
   letter-spacing: 0.12em;
@@ -178,7 +186,7 @@
 
 .cupom-status {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 8px;
+  font-size: 1rem;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.15em;
@@ -191,7 +199,7 @@
 
 .cupom-total {
   font-family: 'Montserrat', sans-serif;
-  font-size: 1.1rem;
+  font-size: 1.2rem;
   font-weight: 800;
   letter-spacing: -0.03em;
   color: var(--ink-primary);
@@ -210,7 +218,7 @@
   margin-bottom: 0.4rem;
   border-bottom: 1px solid rgba(0,139,195,0.08);
   font-family: 'JetBrains Mono', monospace;
-  font-size: 8px;
+  font-size: 1rem;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.12em;
@@ -221,7 +229,7 @@
   grid-template-columns: 1fr 70px 80px 80px;
   gap: 0.5rem;
   padding: 0.35rem 0;
-  font-size: 0.82rem;
+  font-size: 1rem;
   color: var(--ink-secondary);
   border-bottom: 1px solid rgba(0,139,195,0.05);
 }
@@ -229,7 +237,7 @@
 .item-desc { font-weight: 500; }
 .item-qtd, .item-vunit, .item-vtotal {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 0.78rem;
+  font-size: 1rem;
   text-align: right;
 }
 .item-vtotal { color: var(--fenix-blue); font-weight: 600; }

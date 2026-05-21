@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom'
+import IconCaixaRegistradora from '../components/IconCaixaRegistradora'
 import './TotemInicioPage.css'
 
 export default function TotemInicioPage() {
@@ -9,14 +10,25 @@ export default function TotemInicioPage() {
       <div className="inicio-orb inicio-orb-2" />
       <div className="inicio-orb inicio-orb-3" />
 
-      <button
-        className="inicio-btn-fechar"
-        onClick={e => { e.stopPropagation(); navigate('/fechar') }}
-        title="Fechar Caixa"
-        aria-label="Fechar Caixa"
-      >
-        <iconify-icon icon="tabler:lock" />
-      </button>
+      <div className="inicio-btns-admin">
+        <button
+          className="inicio-btn-fechar"
+          onClick={e => { e.stopPropagation(); navigate('/fechar') }}
+          title="Fechar Caixa"
+          aria-label="Fechar Caixa"
+        >
+          <IconCaixaRegistradora size="1.4rem" />
+        </button>
+
+        <button
+          className="inicio-btn-fechar inicio-btn-sair"
+          onClick={e => { e.stopPropagation(); window.close() }}
+          title="Sair"
+          aria-label="Sair do sistema"
+        >
+          <iconify-icon icon="tabler:logout" />
+        </button>
+      </div>
 
       <div className="inicio-content">
         <div className="inicio-logo-mark">

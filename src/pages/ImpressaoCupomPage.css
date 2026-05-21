@@ -65,13 +65,14 @@
   border-radius: var(--radius-pill);
   padding: 0.35rem 1rem;
   font-family: 'Montserrat', sans-serif;
-  font-size: 0.85rem; font-weight: 600;
+  font-size: 1rem; font-weight: 600;
   color: var(--fenix-blue);
 }
 
 .impressao-instrucao {
   color: var(--ink-muted); letter-spacing: 0.12em;
   margin-top: 0.25rem;
+  white-space: nowrap;
 }
 
 .impressao-countdown-track {

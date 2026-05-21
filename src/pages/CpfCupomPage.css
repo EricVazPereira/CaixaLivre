@@ -75,17 +75,18 @@
 
 /* Título — arquitetônico, lê-se de longe */
 .cpf-title {
-  font-size: 2.5rem;
+  font-size: clamp(1.4rem, 4vw, 2rem);
   font-weight: 800;
-  letter-spacing: -0.05em;
+  letter-spacing: -0.04em;
   color: var(--ink-primary);
   text-align: center;
   line-height: 1.1;
+  white-space: nowrap;
 }
 
 /* Subtítulo contextual */
 .cpf-desc {
-  font-size: 0.95rem;
+  font-size: 1rem;
   color: var(--ink-muted);
   text-align: center;
   line-height: 1.65;
@@ -93,11 +94,31 @@
 }
 
 .cpf-desc {
-  font-size: 0.95rem; color: var(--ink-muted);
+  font-size: 1rem; color: var(--ink-muted);
   text-align: center; line-height: 1.6; max-width: 28ch;
 }
 
 .cpf-btns { width: 100%; display: flex; flex-direction: column; gap: 0.75rem; }
+
+/* Botão voltar — canto superior esquerdo do card */
+.cpf-btn-voltar {
+  position: absolute;
+  top: 0.75rem;
+  left: 0.75rem;
+  width: 96px; height: 96px;
+  border-radius: 50%;
+  border: none;
+  background: transparent;
+  color: var(--ink-muted);
+  font-size: 2.8rem;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: background 0.2s, color 0.2s;
+}
+.cpf-btn-voltar:hover {
+  background: var(--bg-subtle);
+  color: var(--ink-primary);
+}
 
 /* CPF formatted display — número grande, leitura imediata */
 .cpf-display-formatted {
@@ -107,11 +128,12 @@
   border-radius: var(--radius-md);
   padding: 1.1rem 1.5rem;
   font-family: 'JetBrains Mono', monospace;
-  font-size: 1.85rem;
+  font-size: clamp(1.1rem, 3.5vw, 1.6rem);
   font-weight: 600;
-  letter-spacing: 0.10em;
+  letter-spacing: 0.08em;
   color: var(--ink-primary);
   text-align: center;
+  white-space: nowrap;
   min-height: 72px;
   display: flex; align-items: center; justify-content: center;
   transition: border-color 0.25s, box-shadow 0.25s, background 0.25s;
@@ -120,6 +142,31 @@
   border-color: var(--fenix-blue);
   background: var(--bg-panel);
   box-shadow: 0 0 0 4px rgba(0,139,195,0.10);
+}
+.cpf-display--valido {
+  border-color: #22c55e;
+  box-shadow: 0 0 0 4px rgba(34,197,94,0.12);
+}
+
+/* Wrapper display + ícone de validação */
+.cpf-display-wrapper {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+.cpf-display-wrapper .cpf-display-formatted {
+  flex: 1;
+}
+.cpf-check-icon {
+  font-size: 2rem;
+  color: #22c55e;
+  flex-shrink: 0;
+  animation: cpf-check-pop 0.30s cubic-bezier(0.16,1,0.3,1) both;
+}
+@keyframes cpf-check-pop {
+  from { opacity: 0; transform: scale(0.5); }
+  to   { opacity: 1; transform: scale(1); }
 }
 
 /* Numpad — herda o estilo Apple definido em AutorizacaoPage.css */
@@ -131,7 +178,7 @@
   border: 1px solid rgba(229,57,53,0.25);
   border-radius: var(--radius-md);
   padding: 0.75rem 1rem;
-  font-size: 0.82rem; font-weight: 500; color: var(--fenix-red);
+  font-size: 1rem; font-weight: 500; color: var(--fenix-red);
   line-height: 1.4;
 }
 

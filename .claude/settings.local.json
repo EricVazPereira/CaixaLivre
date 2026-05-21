@@ -71,7 +71,28 @@
       "Bash(xargs -r kill -9)",
       "Bash(cd /mnt/d/CaixaLivre/backend && node src/server.js & *)",
       "PowerShell(Get-Content \"$env:TEMP\\\\caixalivre_server_err.log\" -ErrorAction SilentlyContinue)",
-      "Bash(dir D:/CaixaLivre /b)"
+      "Bash(dir D:/CaixaLivre /b)",
+      "Read(//c/cliente/**)",
+      "Bash(dir \"C:\\\\\\\\cliente\")",
+      "Read(//c//**)",
+      "Read(//c/Program Files/**)",
+      "Bash(find /c -maxdepth 3 -name \"*.ini\" -path \"*sitef*\")",
+      "Bash(findstr \":3000 :5173 :5174\")",
+      "Bash(findstr \":3000\")",
+      "mcp__Claude_in_Chrome__list_connected_browsers",
+      "PowerShell($tcp = New-Object System.Net.Sockets.TcpClient; try { $tcp.Connect\\(\"192.168.0.130\", 81\\); \"Porta 81: ABERTA\" } catch { \"Porta 81: FECHADA — $_\" } finally { $tcp.Close\\(\\) })",
+      "Bash(xargs kill -9)",
+      "PowerShell(netstat -ano | Select-String \":3001 \" | ForEach-Object { \\($_ -split '\\\\s+'\\)[-1] } | Sort-Object -Unique | Where-Object { $_ -ne '0' } | ForEach-Object { Stop-Process -Id $_ -Force -ErrorAction SilentlyContinue; \"Killed PID $_\" })",
+      "Bash(xargs -I{} kill -9 {})",
+      "Bash(node --check \"D:\\\\CaixaLivre\\\\electron\\\\main.cjs\")",
+      "Bash(node --check backend/src/server.js)",
+      "Bash(node --check backend/src/agente.js)",
+      "Bash(node --check backend/src/config.js)",
+      "Bash(node --check scripts/rebuild-native.cjs)",
+      "Bash(node --check backend/src/routes/balanca.js)",
+      "Bash(node --check electron/main.cjs)",
+      "Bash(cd /d D:\\\\CaixaLivre\\\\backend)",
+      "Bash(node -e \"require\\('node-printer'\\)\")"
     ]
   }
 }

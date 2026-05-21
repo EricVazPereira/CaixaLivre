@@ -3,19 +3,51 @@ import { useNavigate } from 'react-router-dom'
 import { useCarrinhoStore } from '../store/carrinhoStore'
 import './CpfCupomPage.css'
 
-function validarCpf(digits) {
-  if (digits.length !== 11) return false
-  // Rejeita sequências iguais (ex: 111.111.111-11)
-  if (/^(\d)\1{10}$/.test(digits)) return false
-  const d = digits.split('').map(Number)
-  // Primeiro dígito verificador
-  const r1 = d.slice(0,9).reduce((sum, n, i) => sum + n * (10 - i), 0) % 11
-  if (d[9] !== (r1 < 2 ? 0 : 11 - r1)) return false
-  // Segundo dígito verificador
-  const r2 = d.slice(0,10).reduce((sum, n, i) => sum + n * (11 - i), 0) % 11
-  if (d[10] !== (r2 < 2 ? 0 : 11 - r2)) return false
-  return true
+// ── Validações ────────────────────────────────────────────────────────────────
+
+function validarCpf(d) {
+  if (d.length !== 11) return false
+  if (/^(\d)\1{10}$/.test(d)) return false
+  const n = d.split('').map(Number)
+  const r1 = n.slice(0, 9).reduce((s, v, i) => s + v * (10 - i), 0) % 11
+  if (n[9] !== (r1 < 2 ? 0 : 11 - r1)) return false
+  const r2 = n.slice(0, 10).reduce((s, v, i) => s + v * (11 - i), 0) % 11
+  return n[10] === (r2 < 2 ? 0 : 11 - r2)
 }
+
+function validarCnpj(d) {
+  if (d.length !== 14) return false
+  if (/^(\d)\1{13}$/.test(d)) return false
+  const calc = (str, len) => {
+    let sum = 0, pos = len - 7
+    for (let i = len; i >= 1; i--) {
+      sum += Number(str[len - i]) * pos--
+      if (pos < 2) pos = 9
+    }
+    const r = sum % 11
+    return r < 2 ? 0 : 11 - r
+  }
+  return calc(d, 12) === Number(d[12]) && calc(d, 13) === Number(d[13])
+}
+
+// ── Formatação dinâmica ───────────────────────────────────────────────────────
+
+function formatarDocumento(digits) {
+  if (digits.length <= 11) {
+    // CPF: XXX.XXX.XXX-XX — preenche da direita para a esquerda
+    const s = ('_'.repeat(11) + digits).slice(-11)
+    return `${s[0]}${s[1]}${s[2]}.${s[3]}${s[4]}${s[5]}.${s[6]}${s[7]}${s[8]}-${s[9]}${s[10]}`
+  }
+  // CNPJ: XX.XXX.XXX/XXXX-XX — preenche da direita para a esquerda
+  const s = ('_'.repeat(14) + digits).slice(-14)
+  return `${s[0]}${s[1]}.${s[2]}${s[3]}${s[4]}.${s[5]}${s[6]}${s[7]}/${s[8]}${s[9]}${s[10]}${s[11]}-${s[12]}${s[13]}`
+}
+
+function tipoDocumento(digits) {
+  return digits.length <= 11 ? 'CPF' : 'CNPJ'
+}
+
+// ── Componente ────────────────────────────────────────────────────────────────
 
 export default function CpfCupomPage() {
   const navigate = useNavigate()
@@ -29,9 +61,10 @@ export default function CpfCupomPage() {
     navigate('/operacao')
   }
 
-  function handleConfirmarCpf() {
-    if (!validarCpf(digits)) {
-      setErro('CPF inválido. Verifique os números e tente novamente.')
+  function handleConfirmar() {
+    const valido = digits.length === 11 ? validarCpf(digits) : validarCnpj(digits)
+    if (!valido) {
+      setErro(`Esse ${tipoDocumento(digits)} não é válido. Confira e tente de novo.`)
       return
     }
     setCpf(digits)
@@ -40,16 +73,20 @@ export default function CpfCupomPage() {
 
   function pressKey(key) {
     setErro('')
-    if (key === '⌫') setDigits(d => d.slice(0, -1))
-    else if (digits.length < 11) setDigits(d => d + key)
+    if (key === '⌫') {
+      setDigits(d => d.slice(0, -1))
+    } else if (digits.length < 14) {
+      setDigits(d => d + key)
+    }
   }
 
   const KEYS = ['7','8','9','4','5','6','1','2','3','','0','⌫']
 
-  if (modo === 'digitar') {
-    const raw = digits + '_'.repeat(Math.max(0, 11 - digits.length))
-    const formatted = `${raw.slice(0,3)}.${raw.slice(3,6)}.${raw.slice(6,9)}-${raw.slice(9,11)}`
+  const isValido = (digits.length === 11 && validarCpf(digits)) || (digits.length === 14 && validarCnpj(digits))
+  const podeConfirmar = isValido
+  const tipo = tipoDocumento(digits)
 
+  if (modo === 'digitar') {
     return (
       <div className="cpf-root">
         <div className="cpf-orb cpf-orb-1" />
@@ -58,16 +95,32 @@ export default function CpfCupomPage() {
           <div className="cpf-icon-wrap">
             <iconify-icon icon="tabler:id" />
           </div>
-          <h1 className="cpf-title">Digite seu CPF</h1>
-          <p className="cpf-desc">11 dígitos, sem pontos ou traços</p>
-          <div className={`cpf-display-formatted ${digits.length > 0 ? 'cpf-display--active' : ''}`}>
-            {formatted}
+          <h1 className="cpf-title">Digite seu CPF ou CNPJ</h1>
+          <p className="cpf-desc">
+            {digits.length < 11
+              ? 'CPF tem 11 dígitos · CNPJ tem 14'
+              : digits.length === 11
+                ? 'CPF completo — é CNPJ? Continue digitando'
+                : `Faltam ${14 - digits.length}`}
+          </p>
+
+          <div className="cpf-display-wrapper">
+            <div className={`cpf-display-formatted ${digits.length > 0 ? 'cpf-display--active' : ''} ${isValido ? 'cpf-display--valido' : ''}`}>
+              {formatarDocumento(digits)}
+            </div>
+            {isValido && (
+              <iconify-icon
+                icon="tabler:circle-check-filled"
+                class="cpf-check-icon"
+              />
+            )}
           </div>
+
           <div className="numpad-grid">
             {KEYS.map((key, i) => (
               key === '' ? <div key={i} /> :
               <button
-                key={key+i}
+                key={key + i}
                 className={`numpad-key ${key === '⌫' ? 'numpad-key--del' : ''}`}
                 onClick={() => pressKey(key)}
                 type="button"
@@ -76,9 +129,10 @@ export default function CpfCupomPage() {
               </button>
             ))}
           </div>
+
           {erro && (
             <div className="cpf-erro">
-              <iconify-icon icon="tabler:alert-triangle" style={{ fontSize: '0.75rem', flexShrink: 0 }} />
+              <iconify-icon icon="tabler:alert-triangle" style={{ fontSize: '1rem', flexShrink: 0 }} />
               {erro}
             </div>
           )}
@@ -87,19 +141,19 @@ export default function CpfCupomPage() {
             <button
               className="btn-fenix btn-dark"
               onClick={() => { setDigits(''); setErro(''); setModo('escolha') }}
-              style={{ height: '64px', fontSize: '0.75rem', flex: 1 }}
+              style={{ height: '64px', fontSize: '1rem', flex: 1 }}
             >
               <iconify-icon icon="tabler:arrow-left" />
               Voltar
             </button>
             <button
               className="btn-fenix btn-blue"
-              onClick={handleConfirmarCpf}
-              disabled={digits.length !== 11}
-              style={{ height: '64px', fontSize: '0.75rem', flex: 2 }}
+              onClick={handleConfirmar}
+              disabled={!podeConfirmar}
+              style={{ height: '64px', fontSize: '1rem', flex: 2 }}
             >
               <iconify-icon icon="tabler:check" />
-              Confirmar
+              Confirmar {podeConfirmar ? tipo : ''}
             </button>
           </div>
         </div>
@@ -112,11 +166,18 @@ export default function CpfCupomPage() {
       <div className="cpf-orb cpf-orb-1" />
       <div className="cpf-orb cpf-orb-2" />
       <div className="cpf-card reveal-blur active">
+        <button
+          className="cpf-btn-voltar"
+          onClick={() => navigate(-1)}
+          aria-label="Voltar"
+        >
+          <iconify-icon icon="tabler:arrow-left" />
+        </button>
         <div className="cpf-icon-wrap">
           <iconify-icon icon="tabler:receipt" />
         </div>
-        <h1 className="cpf-title">CPF no cupom?</h1>
-        <p className="cpf-desc">Para acumular pontos ou declarar imposto de renda</p>
+        <h1 className="cpf-title">CPF ou CNPJ na nota?</h1>
+        <p className="cpf-desc">Sua nota fica disponível para o imposto de renda</p>
         <div className="cpf-btns">
           <button
             className="btn-fenix btn-dark"
@@ -124,7 +185,7 @@ export default function CpfCupomPage() {
             style={{ height: '80px', borderRadius: '16px' }}
           >
             <iconify-icon icon="tabler:x" style={{ fontSize: '1.5rem' }} />
-            Não, continuar
+            Pular
           </button>
           <button
             className="btn-fenix btn-blue"
@@ -132,7 +193,7 @@ export default function CpfCupomPage() {
             style={{ height: '80px', borderRadius: '16px' }}
           >
             <iconify-icon icon="tabler:id" style={{ fontSize: '1.5rem' }} />
-            Sim, informar CPF
+            Sim, quero informar
           </button>
         </div>
       </div>

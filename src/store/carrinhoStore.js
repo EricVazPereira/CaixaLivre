@@ -1,6 +1,9 @@
 import { create } from 'zustand'
+import { persist } from 'zustand/middleware'
 
-export const useCarrinhoStore = create((set, get) => ({
+export const useCarrinhoStore = create(
+  persist(
+  (set, get) => ({
   itens: [],
   itemSelecionado: null,  // id único da linha selecionada
   cpf: '',
@@ -10,10 +13,12 @@ export const useCarrinhoStore = create((set, get) => ({
   /** Cada scan cria uma linha nova — sem agrupamento por código.
    *  Se produto.id já vier preenchido, usa ele (permite rastrear o item externamente). */
   adicionarItem(produto, quantidade = 1) {
+    const qtd = Number(quantidade)
     const novoItem = {
       ...produto,
       id:         produto.id || crypto.randomUUID(),
-      quantidade: Math.max(1, Math.floor(quantidade)),
+      // Inteiros: garante mínimo 1. Decimais (ex: 0,042 kg): preserva como veio.
+      quantidade: Number.isInteger(qtd) ? Math.max(1, qtd) : Math.max(0.001, qtd),
     }
     set(state => ({ itens: [...state.itens, novoItem] }))
   },
@@ -48,4 +53,10 @@ export const useCarrinhoStore = create((set, get) => ({
   subtotal() {
     return get().itens.reduce((acc, i) => acc + i.valor_unitario * i.quantidade, 0)
   },
-}))
+  }),
+  {
+    name: 'carrinho-store',
+    // itemSelecionado não persiste — sempre começa sem seleção
+    partialize: (state) => ({ itens: state.itens, cpf: state.cpf }),
+  }
+))

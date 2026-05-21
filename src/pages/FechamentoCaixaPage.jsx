@@ -2,11 +2,16 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useCaixaStore } from '../store/caixaStore'
 import { fecharCaixa } from '../services/api'
+import IconCaixaRegistradora from '../components/IconCaixaRegistradora'
 import './FechamentoCaixaPage.css'
 
 export default function FechamentoCaixaPage() {
   const navigate = useNavigate()
-  const { apelido, fecharCaixa: fecharCaixaStore } = useCaixaStore()
+  const { apelido, nmEstacao, dataAbertura, fecharCaixa: fecharCaixaStore } = useCaixaStore()
+
+  const dataAberturaFormatada = dataAbertura
+    ? new Date(dataAbertura).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })
+    : null
 
   const [fechando, setFechando]   = useState(false)
   const [sucesso, setSucesso]     = useState(false)
@@ -38,7 +43,7 @@ export default function FechamentoCaixaPage() {
             <iconify-icon icon="tabler:shield-check" style={{ fontSize: '3rem', color: 'var(--fenix-green)' }} />
           </div>
           <h2 className="fechamento-sucesso-titulo reveal d-1 active">Caixa fechado!</h2>
-          {apelido && <p className="reveal d-2 active" style={{ color: 'var(--ink-muted)', fontSize: '0.95rem' }}>Turno de <strong>{apelido}</strong> encerrado.</p>}
+          {apelido && <p className="reveal d-2 active" style={{ color: 'var(--ink-muted)', fontSize: '1rem' }}>Turno de <strong>{apelido}</strong> encerrado.</p>}
           {mensagem && <p className="fechamento-sucesso-msg reveal d-3 active">{mensagem}</p>}
         </div>
       </div>
@@ -53,17 +58,15 @@ export default function FechamentoCaixaPage() {
       <div className="fechamento-card reveal-blur active">
 
         <div className="fechamento-icon-wrap reveal d-1 active">
-          <iconify-icon icon="tabler:lock" />
+          <IconCaixaRegistradora size="3rem" />
         </div>
 
-        <h1 className="fechamento-title reveal d-2 active">Fechar Caixa</h1>
+        <h1 className="fechamento-title reveal d-2 active">Fechar o caixa?</h1>
 
-        <p className="fechamento-desc reveal d-3 active">
-          {apelido
-            ? <>Deseja encerrar o turno de <strong>{apelido}</strong> e fechar o caixa?</>
-            : 'Deseja encerrar o turno e fechar o caixa?'
-          }
-        </p>
+        <div className="fechamento-info-estacao reveal d-3 active">
+          <span><iconify-icon icon="tabler:device-desktop" /> {nmEstacao || '—'}</span>
+          <span><iconify-icon icon="tabler:clock" /> {dataAberturaFormatada || 'Abertura não registrada'}</span>
+        </div>
 
         {erro && (
           <div className="fechamento-erro reveal active">
@@ -72,24 +75,34 @@ export default function FechamentoCaixaPage() {
           </div>
         )}
 
-        <div className="fechamento-btn-wrap reveal d-4 active">
+        <div className="fechamento-btn-wrap reveal d-3 active">
           <button
             className="btn-fenix btn-dark"
             onClick={handleFechar}
             disabled={fechando}
           >
-            <iconify-icon icon="tabler:lock" style={{ fontSize: '1.6rem' }} />
+            <IconCaixaRegistradora size="1.6rem" />
             {fechando ? 'Fechando…' : 'Fechar Caixa'}
           </button>
 
           <button
             className="btn-fenix btn-neutral"
-            onClick={() => navigate('/operacao')}
+            onClick={() => navigate('/')}
             disabled={fechando}
-            style={{ height: '56px', fontSize: '0.75rem', background: 'transparent', color: 'var(--ink-muted)', boxShadow: 'none', border: '1px solid rgba(0,139,195,0.2)' }}
+            style={{ height: '56px', fontSize: '1rem', background: 'transparent', color: 'var(--ink-muted)', boxShadow: 'none', border: '1px solid rgba(0,139,195,0.2)' }}
           >
             <iconify-icon icon="tabler:arrow-left" style={{ fontSize: '1.2rem' }} />
             Voltar à operação
+          </button>
+
+          <button
+            className="btn-fenix btn-neutral"
+            onClick={() => window.close()}
+            disabled={fechando}
+            style={{ height: '56px', fontSize: '1rem', background: 'transparent', color: 'var(--ink-muted)', boxShadow: 'none', border: '1px solid rgba(0,139,195,0.2)' }}
+          >
+            <iconify-icon icon="tabler:logout" style={{ fontSize: '1.2rem' }} />
+            Sair
           </button>
         </div>
 

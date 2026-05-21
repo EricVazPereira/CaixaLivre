@@ -23,7 +23,7 @@
 
 .pagamento-header-logo {
   font-family: 'Montserrat', sans-serif;
-  font-size: 1.1rem;
+  font-size: 1.2rem;
   font-weight: 800;
   letter-spacing: -0.04em;
   color: var(--ink-primary);
@@ -32,7 +32,7 @@
 
 .pagamento-header-sub {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 9px;
+  font-size: 1rem;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.2em;
@@ -65,7 +65,7 @@
   background: var(--fenix-blue);
   border-bottom: 1px solid rgba(0,139,195,0.12);
   font-family: 'JetBrains Mono', monospace;
-  font-size: 9px;
+  font-size: 1rem;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.15em;
@@ -101,7 +101,7 @@
 }
 
 .resumo-item-nome {
-  font-size: 0.65rem;
+  font-size: 1rem;
   font-weight: 700;
   color: var(--ink-primary);
   white-space: nowrap;
@@ -110,21 +110,21 @@
 }
 .resumo-item-qtd {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 0.6rem;
+  font-size: 1rem;
   font-weight: 500;
   color: var(--ink-secondary);
   text-align: right;
 }
 .resumo-item-preco {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 0.6rem;
+  font-size: 1rem;
   font-weight: 500;
   color: var(--ink-secondary);
   text-align: right;
 }
 .resumo-item-valor {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 0.6rem;
+  font-size: 1rem;
   font-weight: 600;
   color: var(--fenix-blue);
   text-align: right;
@@ -142,7 +142,7 @@
 }
 .resumo-total-label {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 10px;
+  font-size: 1rem;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.22em;
@@ -170,7 +170,7 @@
 
 .forma-title {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 9px;
+  font-size: 1rem;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.2em;
@@ -236,14 +236,14 @@
 }
 .forma-btn-nome {
   font-family: 'Montserrat', sans-serif;
-  font-size: 0.95rem;
+  font-size: 1rem;
   font-weight: 700;
   color: var(--ink-primary);
   text-align: left;
 }
 .forma-btn-sub {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 9px;
+  font-size: 1rem;
   font-weight: 500;
   text-transform: uppercase;
   letter-spacing: 0.12em;
@@ -276,7 +276,7 @@
   align-items: center;
   gap: 1rem;
   box-shadow: var(--shadow-sm);
-  font-size: 0.9rem;
+  font-size: 1rem;
   font-weight: 500;
   color: var(--ink-muted);
 }
@@ -291,7 +291,7 @@
   border: 1px solid rgba(229,57,53,0.25);
   border-radius: var(--radius-md);
   padding: 0.75rem 1rem;
-  font-size: 0.85rem;
+  font-size: 1rem;
   font-weight: 500;
   color: var(--fenix-red);
   line-height: 1.4;
@@ -313,9 +313,10 @@
 }
 .btn-confirmar {
   height: 88px;
-  font-size: 1.05rem;
+  font-size: 1.15rem;
   border-radius: 20px;
   letter-spacing: -0.02em;
+  max-width: none;
 }
 .btn-confirmar iconify-icon {
   font-size: 1.75rem;
@@ -331,3 +332,128 @@
 }
 
 /* Tela de sucesso migrada para ImpressaoCupomPage */
+
+/* ═══════════════════════ SiTef — Overlay Modal ═══════════════════════ */
+
+/* Overlay que cobre toda a tela por cima do conteúdo */
+.sitef-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  background: rgba(10, 15, 25, 0.65);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: sitef-overlay-in 0.22s ease both;
+}
+
+@keyframes sitef-overlay-in {
+  from { opacity: 0; backdrop-filter: blur(0px); }
+  to   { opacity: 1; backdrop-filter: blur(6px); }
+}
+
+.sitef-espera-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  padding: 3rem 3.5rem;
+  background: var(--bg-panel);
+  border-radius: var(--radius-xl, 24px);
+  border: 1px solid rgba(0,139,195,0.18);
+  box-shadow: 0 24px 80px rgba(0,0,0,0.45), 0 0 0 1px rgba(255,255,255,0.04);
+  min-width: 360px;
+  max-width: 480px;
+  text-align: center;
+  animation: sitef-card-in 0.3s cubic-bezier(0.16,1,0.3,1) both;
+}
+
+@keyframes sitef-card-in {
+  from { opacity: 0; transform: translateY(24px) scale(0.96); }
+  to   { opacity: 1; transform: translateY(0)    scale(1); }
+}
+
+.sitef-espera-icon {
+  font-size: 4rem;
+  color: var(--fenix-blue);
+  margin-bottom: 0.5rem;
+}
+
+@keyframes sitef-pulse {
+  0%, 100% { opacity: 1;   transform: scale(1); }
+  50%       { opacity: 0.6; transform: scale(0.92); }
+}
+.sitef-espera-icon-pulse {
+  animation: sitef-pulse 1.8s ease-in-out infinite;
+}
+
+.sitef-espera-titulo {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 1.5rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: var(--ink-primary);
+  line-height: 1.1;
+}
+
+.sitef-espera-sub {
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--ink-muted);
+  max-width: 280px;
+  line-height: 1.5;
+}
+
+.sitef-espera-valor {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 2.8rem;
+  font-weight: 800;
+  letter-spacing: -0.05em;
+  color: var(--fenix-blue);
+  line-height: 1;
+  margin: 0.25rem 0;
+}
+
+.sitef-espera-loader {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-top: 0.5rem;
+  color: var(--ink-muted);
+}
+
+/* ── Modo SiTef = Sim: painel de instrução no lado direito ── */
+.sitef-modo-info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  gap: 0.75rem;
+  text-align: center;
+  padding: 1rem 0.5rem;
+}
+
+.sitef-modo-icon {
+  font-size: 3.5rem;
+  color: var(--fenix-blue);
+  opacity: 0.8;
+}
+
+.sitef-modo-titulo {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--ink-primary);
+  letter-spacing: -0.02em;
+}
+
+.sitef-modo-sub {
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--ink-muted);
+  max-width: 240px;
+  line-height: 1.5;
+}

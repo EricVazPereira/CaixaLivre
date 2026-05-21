@@ -1,19 +1,6 @@
 const express = require('express')
 const router  = express.Router()
-const { query } = require('../db')
 const { NM_ESTACAO, verificarCaixaAberto, abrirCaixaERP, gravarItensERP, fecharComandaERP, fecharCaixaERP } = require('../erp')
-
-// ── Helpers ──────────────────────────────────────────────────────────────────
-
-async function buscarIdHistorico(nmEstacao) {
-  const rows = await query(
-    `SELECT FIRST 1 ID_HISTORICO FROM HISTORICO
-      WHERE NM_ESTACAO = ?
-      ORDER BY ID_HISTORICO DESC`,
-    [nmEstacao]
-  )
-  return rows.length ? rows[0]['ID_HISTORICO'] : null
-}
 
 // ── GET /status — verifica se o caixa está aberto via ERP ───────────────────
 
@@ -29,22 +16,9 @@ router.get('/status', async (req, res) => {
     console.warn('[historico] GET /status — ERP indisponível:', err.message)
   }
 
-  // Se ERP diz aberto, busca o ID_HISTORICO mais recente desta estação
-  let id_historico = null
-  if (aberto) {
-    try {
-      id_historico = await buscarIdHistorico(nm_estacao)
-      if (!id_historico) {
-        console.warn('[historico] GET /status — ERP aberto mas sem HISTORICO no banco')
-        aberto = false
-      }
-    } catch (err) {
-      console.warn('[historico] GET /status — erro ao consultar HISTORICO:', err.message)
-      aberto = false
-    }
-  }
-
-  return res.json({ aberto, nm_estacao, id_historico })
+  // estacao_nao_cadastrada: quando a API de registro de estação for criada,
+  // este campo será true caso nm_estacao não exista no ERP.
+  return res.json({ aberto, nm_estacao, estacao_nao_cadastrada: false })
 })
 
 // ── POST /abrir-erp — abre o caixa via ERP ───────────────────────────────────
@@ -61,13 +35,7 @@ router.post('/abrir-erp', async (req, res) => {
     const confirmacao = await verificarCaixaAberto()
     console.log('[abrir-erp] VerficaCxAberto após abertura:', confirmacao.aberto ? 'ABERTO ✓' : 'FECHADO ✗')
 
-    // Lê o HISTORICO criado pelo ERP
-    const id_historico = await buscarIdHistorico(NM_ESTACAO)
-    if (!id_historico) {
-      throw new Error('ERP processou a abertura mas nenhum HISTORICO foi encontrado no banco para a estação ' + NM_ESTACAO)
-    }
-
-    return res.json({ ok: true, nm_estacao: NM_ESTACAO, id_historico, erp: erpResult })
+    return res.json({ ok: true, nm_estacao: NM_ESTACAO, erp: erpResult })
   } catch (err) {
     console.error('[abrir-erp] Erro:', err.message)
     res.status(502).json({ erro: err.message })
@@ -150,17 +118,35 @@ router.post('/fechar-comanda', async (req, res) => {
 router.post('/fechar-erp', async (req, res) => {
   const { cod_executor = '0' } = req.body
 
+  // O DataSnap do Fênix pode lançar "A component named OPERADORA already exists" quando
+  // a instância do servidor reutiliza o contexto da chamada anterior (FechamentoComanda).
+  // Nesses casos aguardamos 2s e tentamos novamente — na segunda tentativa o componente
+  // já foi liberado pelo garbage collector do Delphi.
+  const ALREADY_EXISTS_RE = /component named .+ already exists/i
+
+  async function tentarFechar() {
+    const erpResult = await fecharCaixaERP(cod_executor)
+    const sucesso   = erpResult?.sucess === true
+    if (!sucesso) throw new Error(erpResult?.message_sucess || 'ERP recusou o fechamento')
+    return erpResult
+  }
+
   try {
     console.log('[fechar-erp] Chamando ERP FechamentoCX — estação:', NM_ESTACAO)
-    const erpResult = await fecharCaixaERP(cod_executor)
-    console.log('[fechar-erp] Resposta do ERP:', JSON.stringify(erpResult))
-
-    // ERP retorna sucess:true mesmo se o caixa não estava aberto — verificar mensagem
-    const sucesso = erpResult?.sucess === true
-    if (!sucesso) {
-      return res.status(502).json({ erro: erpResult?.message_sucess || 'ERP recusou o fechamento' })
+    let erpResult
+    try {
+      erpResult = await tentarFechar()
+    } catch (e) {
+      if (ALREADY_EXISTS_RE.test(e.message)) {
+        console.warn('[fechar-erp] DataSnap retornou "already exists" — aguardando 2s e tentando novamente...')
+        await new Promise(r => setTimeout(r, 2000))
+        erpResult = await tentarFechar()   // lança se falhar de novo
+      } else {
+        throw e
+      }
     }
 
+    console.log('[fechar-erp] Resposta do ERP:', JSON.stringify(erpResult))
     return res.json({ ok: true, mensagem: erpResult.message_sucess, erp: erpResult })
   } catch (err) {
     console.error('[fechar-erp] Erro:', err.message)

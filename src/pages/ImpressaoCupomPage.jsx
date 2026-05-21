@@ -53,7 +53,7 @@ export default function ImpressaoCupomPage() {
         )}
 
         <p className="impressao-instrucao label-mono reveal d-3 active">
-          Retire seu comprovante na impressora
+          Imprimindo cupom fiscal
         </p>
 
         <div className="impressao-countdown-track">
@@ -66,7 +66,7 @@ export default function ImpressaoCupomPage() {
         <button
           className="btn-fenix btn-dark"
           onClick={irParaInicio}
-          style={{ height: '72px', fontSize: '0.825rem', borderRadius: '14px' }}
+          style={{ height: '72px', fontSize: '1rem', borderRadius: '14px' }}
         >
           <iconify-icon icon="tabler:home" style={{ fontSize: '1.4rem' }} />
           Nova compra

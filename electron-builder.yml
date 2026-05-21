@@ -1,0 +1,58 @@
+appId: com.caixalivre.app
+productName: CaixaLivre
+copyright: Copyright © 2025 CaixaLivre
+
+directories:
+  output: release
+
+# ── O que vai DENTRO do asar (código do processo principal) ───────────────────
+files:
+  - electron/**
+  - package.json
+  - "!src/**"
+  - "!backend/**"
+  - "!dist/**"
+  - "!scripts/**"
+  - "!release/**"
+  - "!node_modules/**"
+
+# ── Recursos fora do asar (backend, frontend compilado, configuração) ─────────
+extraResources:
+  # Backend completo com node_modules (módulos nativos funcionam fora do asar)
+  - from: backend
+    to: backend
+    filter:
+      - "**/*"
+      - "!node_modules/.cache/**"
+      - "!**/*.map"
+
+  # Frontend React compilado (servido pelo Express como static)
+  - from: dist
+    to: dist
+
+# Arquivos ao lado do executável — editáveis pelo técnico sem abrir resources/
+extraFiles:
+  - from: Network.ini
+    to: Network.ini
+  # Pasta de imagens ao lado do .exe — técnico pode substituir logo.bmp sem recompilar
+  - from: img
+    to: img
+
+# ── Windows ───────────────────────────────────────────────────────────────────
+win:
+  # Função de assinatura no-op: evita download do winCodeSign (requer symlinks / admin no Windows)
+  sign: scripts/no-sign.cjs
+  target:
+    - target: nsis
+      arch: [x64]
+
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: false
+  installerLanguages: [pt_BR]
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: CaixaLivre
+  deleteAppDataOnUninstall: false
+
+publish: null

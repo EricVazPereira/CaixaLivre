@@ -21,10 +21,10 @@ export default function ConsultaVendasPage() {
   const [erro, setErro]         = useState('')
 
   useEffect(() => {
-    fetch('http://localhost:3001/api/contas?itens=true')
-      .then(r => r.json())
-      .then(data => { setContas(data); setCarregando(false) })
-      .catch(() => { setErro('Erro ao carregar vendas.'); setCarregando(false) })
+    // Consulta de vendas via banco direto foi desabilitada por segurança.
+    // Para reativar, migrar para endpoint do ERP Fenix.
+    setCarregando(false)
+    setErro('Consulta de vendas indisponível nesta versão.')
   }, [])
 
   const totalGeral  = contas.filter(c => c.status === 'paga').reduce((acc, c) => acc + c.valor_total, 0)
@@ -40,7 +40,7 @@ export default function ConsultaVendasPage() {
           display:'inline-flex', alignItems:'center', gap:'0.4rem',
           padding:'0 1.25rem', height:'44px', borderRadius:'9999px',
           border:'1px solid rgba(0,139,195,0.2)', background:'transparent',
-          fontFamily:'Montserrat,sans-serif', fontSize:'0.85rem', fontWeight:700,
+          fontFamily:'Montserrat,sans-serif', fontSize:'1rem', fontWeight:700,
           color:'var(--ink-muted)', cursor:'pointer', transition: 'all 0.2s'
         }}>
           <iconify-icon icon="tabler:arrow-left" style={{ fontSize: '1.2rem' }} />

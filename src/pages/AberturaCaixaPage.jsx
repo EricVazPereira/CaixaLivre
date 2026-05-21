@@ -8,17 +8,19 @@ export default function AberturaCaixaPage() {
   const navigate = useNavigate()
   const { abrirCaixa: abrirCaixaStore } = useCaixaStore()
 
-  const [status, setStatus]           = useState(null)
-  const [carregando, setCarregando]   = useState(true)
-  const [abrindo, setAbrindo]         = useState(false)
-  const [erro, setErro]               = useState('')
-  const [balancaOk, setBalancaOk]     = useState(true)
+  const [status, setStatus]                 = useState(null)
+  const [carregando, setCarregando]         = useState(true)
+  const [abrindo, setAbrindo]               = useState(false)
+  const [erro, setErro]                     = useState('')
+  const [balancaOk, setBalancaOk]           = useState(true)
+  const [estacaoNaoCadastrada, setEstacaoNaoCadastrada] = useState(false)
 
   useEffect(() => { verificar() }, [])
 
   async function verificar() {
     setCarregando(true)
     setErro('')
+    setEstacaoNaoCadastrada(false)
     try {
       // Verifica caixa e balança em paralelo
       const [data, balanca] = await Promise.all([
@@ -27,9 +29,16 @@ export default function AberturaCaixaPage() {
       ])
       // Só mostra aviso se balança está habilitada E não comunicou
       setBalancaOk(!balanca.habilitada || balanca.ok)
+
+      if (data.estacao_nao_cadastrada) {
+        setEstacaoNaoCadastrada(true)
+        setStatus(data)
+        return
+      }
+
       setStatus(data)
       if (data.aberto) {
-        abrirCaixaStore({ idHistorico: data.id_historico, nomeOperador: '', apelido: '', cdOperador: 0 })
+        abrirCaixaStore({ idHistorico: null, nomeOperador: '', apelido: '', cdOperador: 0, nmEstacao: data.nm_estacao || '' })
         navigate('/inicio')
       }
     } catch (e) {
@@ -44,8 +53,7 @@ export default function AberturaCaixaPage() {
     setErro('')
     try {
       const data = await abrirCaixa()
-      if (!data.id_historico) throw new Error('Caixa aberto no ERP mas histórico não encontrado.')
-      abrirCaixaStore({ idHistorico: data.id_historico, nomeOperador: '', apelido: '', cdOperador: 0 })
+      abrirCaixaStore({ idHistorico: null, nomeOperador: '', apelido: '', cdOperador: 0, nmEstacao: status?.nm_estacao || data.nm_estacao || '' })
       navigate('/inicio')
     } catch (e) {
       setErro(e.message)
@@ -92,6 +100,19 @@ export default function AberturaCaixaPage() {
               {status.aberto ? 'Caixa Aberto' : 'Caixa Fechado'}
             </div>
 
+            {estacaoNaoCadastrada && (
+              <div className="abertura-erro reveal active" style={{ flexDirection: 'column', alignItems: 'center', gap: '0.5rem', textAlign: 'center' }}>
+                <iconify-icon icon="tabler:device-desktop-off" style={{ fontSize: '2rem', flexShrink: 0 }} />
+                <div>
+                  <strong>Estação não cadastrada</strong>
+                  <span style={{ display: 'block', fontSize: '1rem', marginTop: '0.25rem', opacity: 0.8 }}>
+                    A estação <strong>{status?.nm_estacao}</strong> não está registrada no sistema.<br />
+                    Chame o administrador para cadastrá-la.
+                  </span>
+                </div>
+              </div>
+            )}
+
             {!balancaOk && (
               <div className="abertura-aviso-balanca reveal d-4 active">
                 <iconify-icon icon="tabler:scale-off" style={{ fontSize: '1.4rem', flexShrink: 0 }} />
@@ -102,7 +123,7 @@ export default function AberturaCaixaPage() {
               </div>
             )}
 
-            {!status.aberto && (
+            {!status.aberto && !estacaoNaoCadastrada && (
               <div className="abertura-btn-wrap reveal d-5 active">
                 <button
                   className="btn-fenix btn-blue"

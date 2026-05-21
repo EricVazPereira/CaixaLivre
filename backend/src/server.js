@@ -1,14 +1,18 @@
+'use strict'
 const express = require('express')
 const cors    = require('cors')
-const { query } = require('./db')
-const { SERVIDOR_PORTA, NM_ESTACAO, DB_DATABASE } = require('./config')
+const http    = require('http')
+const path    = require('path')
+const fs      = require('fs')
+const { SERVIDOR_PORTA, AGENTE_PORTA, NM_ESTACAO } = require('./config')
 
 const produtosRouter   = require('./routes/produtos')
 const contasRouter     = require('./routes/contas')
 const historicoRouter  = require('./routes/historico')
 const impressoraRouter = require('./routes/impressora')
 const authRouter       = require('./routes/auth')
-const balancaRouter    = require('./routes/balanca')
+const sitefRouter      = require('./routes/sitef')
+const configRouter     = require('./routes/config')
 
 const app  = express()
 const PORT = SERVIDOR_PORTA
@@ -16,77 +20,107 @@ const PORT = SERVIDOR_PORTA
 app.use(cors({ origin: /^http:\/\/localhost(:\d+)?$/ }))
 app.use(express.json())
 
-app.use('/api/balanca',    balancaRouter)
+// Health-check — usado pelo Electron para saber que o servidor está pronto
+app.get('/api/health', (_req, res) => res.json({ ok: true }))
+
+// /api/balanca/* → proxy para o agente local (único dono da porta serial)
+app.use('/api/balanca', (req, res) => {
+  const proxyReq = http.request(
+    {
+      hostname: 'localhost',
+      port:     AGENTE_PORTA,
+      path:     '/api/balanca' + req.url,
+      method:   req.method,
+      headers:  { ...req.headers, host: `localhost:${AGENTE_PORTA}` },
+    },
+    proxyRes => {
+      res.writeHead(proxyRes.statusCode, proxyRes.headers)
+      proxyRes.pipe(res)
+    }
+  )
+  proxyReq.on('error', () => {
+    if (!res.headersSent)
+      res.status(503).json({ ok: false, habilitada: false, erro: 'Agente não disponível' })
+  })
+  // GET: sem body. POST (/reconectar): pipe do body do request.
+  if (req.method === 'POST') req.pipe(proxyReq)
+  else proxyReq.end()
+})
+
 app.use('/api/produtos',   produtosRouter)
 app.use('/api/contas',     contasRouter)
 app.use('/api/historico',  historicoRouter)
 app.use('/api/impressora', impressoraRouter)
 app.use('/api/auth',       authRouter)
+app.use('/api/sitef',      sitefRouter)
+app.use('/api/config',     configRouter)
+
+// Imagens do cliente — servidas de \img\ ao lado do executável
+// Permite trocar logo.bmp sem recompilar o app
+const IMG_DIR = process.env.CAIXALIVRE_IMG || path.resolve(__dirname, '../../img')
+app.use('/img', express.static(IMG_DIR))
+
+// Frontend estático compilado (Electron / produção)
+// Em dev:  CAIXALIVRE_DIST não definido → tenta ../../dist (raiz do projeto)
+// Em prod: CAIXALIVRE_DIST definido pelo Electron → resources/dist/
+const DIST_DIR = process.env.CAIXALIVRE_DIST || path.resolve(__dirname, '../../dist')
+if (fs.existsSync(DIST_DIR)) {
+  app.use(express.static(DIST_DIR))
+  // SPA fallback — qualquer rota não-API devolve o index.html do React
+  app.get('*', (_req, res) => res.sendFile(path.join(DIST_DIR, 'index.html')))
+}
 
 app.use((err, _req, res, _next) => {
   console.error(err)
   res.status(500).json({ erro: 'Erro interno do servidor' })
 })
 
+// ── API pública ───────────────────────────────────────────────────────────────
+
 /**
- * Sincroniza generators do Firebird com o MAX(ID) de cada tabela.
- * Garante que GEN_CONTA e GEN_CONSUMO nunca estejam atrás dos dados reais.
+ * Inicia o servidor após sincronizar o Firebird.
+ * Retorna o http.Server quando a porta estiver pronta.
+ * Usado pelo Electron (main.cjs) para controlar o ciclo de vida.
  */
-async function sincronizarGenerators() {
-  const [maxConta, maxConsumo, maxHistorico, genConta, genConsumo, genHistorico] = await Promise.all([
-    query('SELECT MAX(ID_CONTA)      AS M FROM CONTA'),
-    query('SELECT MAX(ID_CONSUMO)    AS M FROM CONSUMO'),
-    query('SELECT MAX(ID_HISTORICO)  AS M FROM HISTORICO'),
-    query('SELECT GEN_ID(GEN_CONTA,      0) AS G FROM RDB$DATABASE'),
-    query('SELECT GEN_ID(GEN_CONSUMO,    0) AS G FROM RDB$DATABASE'),
-    query('SELECT GEN_ID(GEN_HISTORICO,  0) AS G FROM RDB$DATABASE'),
-  ])
-
-  const maxC  = maxConta[0]['M']      || 0
-  const maxCS = maxConsumo[0]['M']    || 0
-  const maxH  = maxHistorico[0]['M']  || 0
-  const genC  = genConta[0]['G']      || 0
-  const genCS = genConsumo[0]['G']    || 0
-  const genH  = genHistorico[0]['G']  || 0
-
-  if (genC < maxC) {
-    await query(`SET GENERATOR GEN_CONTA TO ${maxC}`)
-    console.log(`🔧 GEN_CONTA ajustado: ${genC} → ${maxC}`)
-  }
-  if (genCS < maxCS) {
-    await query(`SET GENERATOR GEN_CONSUMO TO ${maxCS}`)
-    console.log(`🔧 GEN_CONSUMO ajustado: ${genCS} → ${maxCS}`)
-  }
-  if (genH < maxH) {
-    await query(`SET GENERATOR GEN_HISTORICO TO ${maxH}`)
-    console.log(`🔧 GEN_HISTORICO ajustado: ${genH} → ${maxH}`)
-  }
-}
-
-/** Garante que a estação existe na tabela ESTACAO */
-async function garantirEstacao() {
-  const rows = await query(`SELECT DS_ESTACAO FROM ESTACAO WHERE DS_ESTACAO = ?`, [NM_ESTACAO])
-  if (!rows.length) {
-    await query(
-      `INSERT INTO ESTACAO (DS_ESTACAO, ATIVO_ESTACAO, TP_ESTACAO, INDICE_ESTACAO,
-         OPERACAO_ESTACAO, PDV_ESTACAO, ST_ESTACAO, FL_TAXA_GERAL_ESTACAO, DH_MAN_ESTACAO)
-       VALUES (?, 1, 0, 0, 1, 1, 1, 0, CURRENT_TIMESTAMP)`,
-      [NM_ESTACAO]
-    )
-    console.log(`✅ Estação ${NM_ESTACAO} cadastrada no Firebird`)
-  } else {
-    console.log(`✅ Estação ${NM_ESTACAO} encontrada no Firebird`)
-  }
-}
-
-Promise.all([sincronizarGenerators(), garantirEstacao()])
-  .then(() => {
-    app.listen(PORT, () => {
+async function start() {
+  return new Promise((resolve, reject) => {
+    const server = app.listen(PORT, () => {
       console.log(`✅ Backend CaixaLivre rodando em http://localhost:${PORT}`)
-      console.log(`🗄️  Banco: Firebird — ${DB_DATABASE}`)
+      resolve(server)
     })
+    server.on('error', reject)
   })
-  .catch(err => {
-    console.error('❌ Falha ao conectar ao Firebird:', err.message)
-    process.exit(1)
-  })
+}
+
+// ── Modo standalone (node src/server.js) ─────────────────────────────────────
+if (require.main === module) {
+  start()
+    .then(server => {
+      server.on('error', (err) => {
+        if (err.code === 'EADDRINUSE') {
+          console.error(`❌ Porta ${PORT} em uso — tentando de novo em 1s...`)
+          setTimeout(() => { server.close(); server.listen(PORT) }, 1000)
+        } else {
+          throw err
+        }
+      })
+
+      function shutdown(signal) {
+        console.log(`\n🛑 ${signal} recebido — encerrando servidor...`)
+        server.close(() => {
+          console.log('✅ Servidor encerrado')
+          process.exit(0)
+        })
+        setTimeout(() => process.exit(0), 3000).unref()
+      }
+
+      process.on('SIGTERM', () => shutdown('SIGTERM'))
+      process.on('SIGINT',  () => shutdown('SIGINT'))
+    })
+    .catch(err => {
+      console.error('❌ Falha ao conectar ao Firebird:', err.message)
+      process.exit(1)
+    })
+}
+
+module.exports = { start, app }

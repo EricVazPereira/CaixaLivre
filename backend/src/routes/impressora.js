@@ -1,5 +1,5 @@
 const { Router } = require('express')
-const { exec }   = require('child_process')
+const { exec, spawn } = require('child_process')
 const fs         = require('fs')
 const path       = require('path')
 const os         = require('os')
@@ -63,6 +63,95 @@ const WINSPOOL_DLL = path.join(os.tmpdir(), 'CaixaLivreWinSpool.dll')
 /** Nome da impressora padrão cacheado no startup — evita Get-CimInstance a cada impressão */
 let cachedPrinterName = null
 
+// ── Cache dos dados da empresa ────────────────────────────────────────────────
+// Buscado uma única vez via ERP e reutilizado em todas as impressões.
+// Invalidado apenas ao reiniciar o servidor.
+
+let empresaCache = null
+
+async function buscarEmpresaComCache() {
+  if (empresaCache) return empresaCache
+  const api = await pegaDadosEmpresa()
+  empresaCache = {
+    CNPJ:            api['CNPJ']          || '',
+    IE:              api['IE']            || '',
+    NM_FANTASIA:     api['Nome Fantasia'] || '',
+    NM_CONTRIBUINTE: api['Razao Social']  || '',
+    LOGRADOURO:      api['Rua']           || '',
+    NUMERO:          api['Numero']        || '',
+    BAIRRO:          api['Bairro']        || '',
+    MUNICIPIO:       api['Cidade']        || '',
+    UF:              api['UF']            || '',
+    CEP:             api['Cep']           || '',
+    TELEFONE:        api['Telefone']      || '',
+  }
+  console.log('[impressora] Dados da empresa em cache ✓')
+  return empresaCache
+}
+
+// ── Sessão PowerShell persistente ────────────────────────────────────────────
+// Um único processo PowerShell fica vivo. Comandos são enviados via stdin e
+// o resultado lido via stdout. Elimina o custo de startup (~400-600ms) por
+// impressão. Em caso de falha, reinicia automaticamente após 2s.
+
+let psSession     = null   // ChildProcess
+let psSessionBuf  = ''     // buffer de stdout acumulado
+let psSessionPend = []     // { sentinel, resolve, reject }[]
+
+function psSessionFlush() {
+  while (psSessionPend.length > 0) {
+    const { sentinel, resolve } = psSessionPend[0]
+    const idx = psSessionBuf.indexOf(sentinel)
+    if (idx === -1) break
+    const saida = psSessionBuf.slice(0, idx).replace(/\r\n/g, '\n').trimEnd()
+    psSessionBuf = psSessionBuf.slice(idx + sentinel.length)
+    // descarta newlines após o sentinel
+    while (psSessionBuf[0] === '\r' || psSessionBuf[0] === '\n') psSessionBuf = psSessionBuf.slice(1)
+    psSessionPend.shift()
+    resolve(saida)
+  }
+}
+
+function psSessionExec(script) {
+  if (!psSession || psSession.exitCode !== null) {
+    return Promise.reject(new Error('[PS] sessão não disponível'))
+  }
+  return new Promise((resolve, reject) => {
+    const sentinel = `__PSDONE_${Date.now().toString(36)}_${Math.random().toString(36).slice(2)}__`
+    psSessionPend.push({ sentinel, resolve, reject })
+    psSession.stdin.write(`${script}\nWrite-Output '${sentinel}'\n`, 'utf8')
+  })
+}
+
+async function iniciarSessaoPS() {
+  psSession    = spawn('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', '-'], { stdio: ['pipe', 'pipe', 'pipe'] })
+  psSessionBuf = ''
+
+  psSession.stdout.on('data', chunk => {
+    psSessionBuf += chunk.toString('utf8')
+    psSessionFlush()
+  })
+  psSession.stderr.on('data', chunk =>
+    console.warn('[PS sessão]', chunk.toString('utf8').trim())
+  )
+  psSession.on('exit', code => {
+    console.warn(`[impressora] Sessão PS encerrada (code ${code}) — reiniciando em 2s…`)
+    psSession = null
+    for (const p of psSessionPend) p.reject(new Error('Sessão PS reiniciada'))
+    psSessionPend = []
+    psSessionBuf  = ''
+    setTimeout(() => iniciarSessaoPS().catch(e => console.error('[impressora] Falha ao reiniciar sessão PS:', e.message)), 2000)
+  })
+
+  // Carrega DLL e define impressora uma vez só para toda a sessão
+  const loadCmd    = fs.existsSync(WINSPOOL_DLL)
+    ? `Add-Type -Path '${WINSPOOL_DLL}' -EA SilentlyContinue`
+    : `Add-Type -TypeDefinition '${WINSPOOL_CS}' -Language CSharp -EA SilentlyContinue`
+  const printerCmd = cachedPrinterName ? `\n$global:pn = '${cachedPrinterName}'` : ''
+  await psSessionExec(loadCmd + printerCmd)
+  console.log('[impressora] Sessão PS persistente iniciada ✓')
+}
+
 /**
  * Pré-aquece em background assim que o módulo carrega:
  *   1. Compila/verifica o DLL WinSpool (elimina Add-Type lento)
@@ -90,6 +179,20 @@ setImmediate(async () => {
   } catch (e) {
     console.warn('[impressora] Não foi possível pré-carregar impressora:', e.message)
   }
+
+  // ── 3. Sessão PS persistente (DLL já compilada, impressora já cacheada) ──
+  try {
+    await iniciarSessaoPS()
+  } catch (e) {
+    console.warn('[impressora] Sessão PS não iniciada (usará exec por impressão):', e.message)
+  }
+
+  // ── 4. Pré-aquece dados da empresa (elimina chamada ERP na primeira impressão) ──
+  try {
+    await buscarEmpresaComCache()
+  } catch (e) {
+    console.warn('[impressora] Não foi possível pré-carregar empresa:', e.message)
+  }
 })
 
 /**
@@ -98,24 +201,64 @@ setImmediate(async () => {
  * curto o suficiente para o EncodedCommand (limite ~8 KB).
  * @param {Buffer} cupomBuffer — bytes ESC/POS prontos
  */
+/**
+ * Envia bytes raw para a impressora.
+ * Caminho rápido: sessão PS persistente (sem startup, DLL e impressora já carregados).
+ * Fallback:       exec powershell (se a sessão ainda não estiver pronta).
+ */
 function psRaw(cupomBuffer) {
   return new Promise((resolve, reject) => {
     const tmpFile = path.join(os.tmpdir(), `cupom_${Date.now()}.bin`)
 
-    fs.writeFile(tmpFile, cupomBuffer, (writeErr) => {
+    fs.writeFile(tmpFile, cupomBuffer, async (writeErr) => {
       if (writeErr) return reject(writeErr)
 
-      // Carrega o DLL pré-compilado (rápido) — ou compila inline se ainda não existir
+      // ── Caminho rápido: sessão persistente ────────────────────────────────
+      if (psSession && psSession.exitCode === null && cachedPrinterName) {
+        const script = [
+          `try {`,
+          `  $bytes = [IO.File]::ReadAllBytes('${tmpFile}')`,
+          `  Remove-Item '${tmpFile}' -EA SilentlyContinue`,
+          `  $h = [IntPtr]::Zero`,
+          `  if (![WinSpool]::OpenPrinter($global:pn, [ref]$h, [IntPtr]::Zero)) { throw "OpenPrinter falhou: $global:pn" }`,
+          `  $di = New-Object WinSpool+DocInfo`,
+          `  $di.pDocName = 'CupomCaixaLivre'; $di.pDatatype = 'RAW'`,
+          `  if ([WinSpool]::StartDocPrinter($h, 1, [ref]$di) -le 0) { [WinSpool]::ClosePrinter($h); throw 'StartDocPrinter falhou' }`,
+          `  [WinSpool]::StartPagePrinter($h) | Out-Null`,
+          `  $ptr = [Runtime.InteropServices.Marshal]::AllocHGlobal($bytes.Length)`,
+          `  [Runtime.InteropServices.Marshal]::Copy($bytes, 0, $ptr, $bytes.Length)`,
+          `  $w = 0`,
+          `  [WinSpool]::WritePrinter($h, $ptr, $bytes.Length, [ref]$w) | Out-Null`,
+          `  [Runtime.InteropServices.Marshal]::FreeHGlobal($ptr)`,
+          `  [WinSpool]::EndPagePrinter($h) | Out-Null`,
+          `  [WinSpool]::EndDocPrinter($h) | Out-Null`,
+          `  [WinSpool]::ClosePrinter($h) | Out-Null`,
+          `  Write-Output "OK:$w"`,
+          `} catch {`,
+          `  Write-Output "ERR:$_"`,
+          `}`,
+        ].join('\n')
+
+        try {
+          const saida = await psSessionExec(script)
+          fs.unlink(tmpFile, () => {})
+          if (saida.startsWith('ERR:')) return reject(new Error(saida.slice(4).trim()))
+          return resolve(saida)
+        } catch (e) {
+          console.warn('[impressora] Sessão PS falhou, usando exec fallback:', e.message)
+          // continua para o fallback abaixo
+        }
+      }
+
+      // ── Fallback: exec powershell (sessão não disponível) ─────────────────
       const loadType = fs.existsSync(WINSPOOL_DLL)
         ? `Add-Type -Path '${WINSPOOL_DLL}' -ErrorAction SilentlyContinue`
         : `Add-Type -TypeDefinition '${WINSPOOL_CS}' -Language CSharp -ErrorAction SilentlyContinue`
 
-      // tmpFile pode ter barras invertidas — em PS single-quoted strings são literais ✓
       const script = [
         loadType,
         `$bytes = [IO.File]::ReadAllBytes('${tmpFile}')`,
         `Remove-Item '${tmpFile}' -ErrorAction SilentlyContinue`,
-        // Usa nome cacheado (instantâneo) ou faz a query WMI como fallback
         cachedPrinterName
           ? `$pn = '${cachedPrinterName}'`
           : `$pn = (Get-CimInstance Win32_Printer | Where-Object { $_.Default }).Name | Select-Object -First 1`,
@@ -141,7 +284,7 @@ function psRaw(cupomBuffer) {
       ps(script)
         .then(resolve)
         .catch(reject)
-        .finally(() => fs.unlink(tmpFile, () => {})) // garante limpeza
+        .finally(() => fs.unlink(tmpFile, () => {}))
     })
   })
 }
@@ -746,11 +889,66 @@ function secaoQRProtocolo({ protocolo, nfce, dataHora, urlQrcode }) {
   return Buffer.concat(parts)
 }
 
+// ── Bloco TEF compacto (SiTef) ────────────────────────────────────────────────
+
+/**
+ * Gera o bloco compacto de comprovante TEF para inserir no cupom.
+ * Formato:
+ *   ────────────────────────────────────────────────────────────────
+ *   PAGAMENTO VIA CARTAO
+ *   CREDITO VISA - A VISTA
+ *   NSU: 000000006  AUT: 160006
+ *   18/05/2026 14:30  R$ 26,70
+ *   ────────────────────────────────────────────────────────────────
+ *
+ * @param {{ nomeProduto, nsuHost, codAutorizacao, dataTx, horaTx, parcelasTx, valorTx }} s
+ */
+function secaoSiTef(s) {
+  if (!s || !s.nsuHost) return Buffer.alloc(0)
+
+  const parts = []
+  const add   = (...b) => b.forEach(x => parts.push(x))
+
+  const parcStr = (s.parcelasTx && s.parcelasTx > 1)
+    ? `${s.parcelasTx}X SEM JUROS`
+    : 'A VISTA'
+
+  const produto = da(String(s.nomeProduto || 'CARTAO')).toUpperCase()
+  const nsu     = da(String(s.nsuHost        || ''))
+  const aut     = da(String(s.codAutorizacao || ''))
+  const data    = da(String(s.dataTx || ''))
+  const hora    = da(String(s.horaTx || ''))
+  const valor   = da(String(s.valorTx || '').replace(',', '.'))
+  const vlrFmt  = valor ? `R$ ${brl(valor)}` : ''
+
+  // Linha "NSU: X  AUT: Y" — string compacta para centralizar corretamente
+  const nsuAut = nsu && aut
+    ? `NSU: ${nsu}  AUT: ${aut}`
+    : nsu ? `NSU: ${nsu}` : aut ? `AUT: ${aut}` : ''
+
+  // Linha "DD/MM/AAAA HH:MM  R$ XX,XX"
+  const dataValor = [data && hora ? `${data} ${hora}` : data || hora, vlrFmt]
+    .filter(Boolean).join('  ')
+
+  add(CMD_ALIGN_C)
+  add(t(sep('-')))
+  add(CMD_BOLD_ON, t(center('PAGAMENTO VIA CARTAO')), CMD_BOLD_OFF)
+  add(t(center(`${produto} - ${parcStr}`)))
+  if (nsuAut)    add(t(center(nsuAut)))
+  if (dataValor) add(CMD_BOLD_ON, t(center(dataValor)), CMD_BOLD_OFF)
+  add(t(sep('-')))
+  add(CMD_ALIGN_L)
+  add(t(''))
+
+  return Buffer.concat(parts)
+}
+
 // ── Monta Buffer ESC/POS do cupom completo ────────────────────────────────────
 
 function montarCupomESCPOS({
   empresa, itens, total, forma_pagamento, cpf,
   chaveAcesso = '', protocolo = '', nfce = '', urlQrcode = '',
+  sitefData = null,
 }) {
   const parts = []
   const add = (...bufs) => bufs.forEach(b => parts.push(b))
@@ -801,7 +999,6 @@ function montarCupomESCPOS({
   add(t(center(cpfNum.length === 11 ? `CPF: ${fmtCpf(cpfNum)}` : 'CONSUMIDOR NAO IDENTIFICADO')))
   add(t(''))
 
-
   // ── QR Code (esq.) + Protocolo/Data (dir.) em Page Mode ──────────────────
   add(secaoQRProtocolo({
     protocolo:  protocolo || '0'.repeat(15),
@@ -809,6 +1006,9 @@ function montarCupomESCPOS({
     dataHora:   NFCE_HABILITADO ? (protocolo ? fmtDatetime(agora) : null) : fmtDatetime(agora),
     urlQrcode:  urlQrcode,
   }))
+
+  // ── Comprovante TEF (SiTef) — último bloco antes do corte ────────────────
+  if (sitefData) add(secaoSiTef(sitefData))
 
   // ── Finalização ───────────────────────────────────────────────────────────
   add(CMD_FEED3)
@@ -859,7 +1059,8 @@ router.post('/teste', async (_req, res) => {
 
 router.post('/cupom', async (req, res) => {
   const { itens, total, forma_pagamento, cpf = '',
-          chaveAcesso = '', protocolo = '', nfce = '', urlQrcode = '' } = req.body
+          chaveAcesso = '', protocolo = '', nfce = '', urlQrcode = '',
+          sitefData = null } = req.body
 
   if (!Array.isArray(itens) || itens.length === 0)
     return res.status(400).json({ ok: false, erro: 'itens é obrigatório' })
@@ -868,31 +1069,17 @@ router.post('/cupom', async (req, res) => {
   if (!forma_pagamento)
     return res.status(400).json({ ok: false, erro: 'forma_pagamento é obrigatório' })
 
-  // Busca dados da empresa via API do ERP
+  // Dados da empresa — retorna do cache (zero latência após a primeira impressão)
   let empresa = {}
   try {
-    const api = await pegaDadosEmpresa()
-    console.log('[impressora] PegaDadosEmpresa raw:', JSON.stringify(api))
-    empresa = {
-      CNPJ:            api['CNPJ']          || '',
-      IE:              api['IE']            || '',
-      NM_FANTASIA:     api['Nome Fantasia'] || '',
-      NM_CONTRIBUINTE: api['Razao Social']  || '',
-      LOGRADOURO:      api['Rua']           || '',
-      NUMERO:          api['Numero']        || '',
-      BAIRRO:          api['Bairro']        || '',
-      MUNICIPIO:       api['Cidade']        || '',
-      UF:              api['UF']            || '',
-      CEP:             api['Cep']           || '',
-      TELEFONE:        api['Telefone']      || '',
-    }
+    empresa = await buscarEmpresaComCache()
   } catch (e) {
-    console.warn('[impressora] Não foi possível buscar dados da empresa via ERP:', e.message)
+    console.warn('[impressora] Não foi possível buscar dados da empresa:', e.message)
   }
 
   // Monta bytes ESC/POS e envia raw para a impressora
   const cupomBuf = montarCupomESCPOS({ empresa, itens, total: Number(total), forma_pagamento, cpf,
-                                       chaveAcesso, protocolo, nfce, urlQrcode })
+                                       chaveAcesso, protocolo, nfce, urlQrcode, sitefData })
 
   try {
     const saida = await psRaw(cupomBuf)

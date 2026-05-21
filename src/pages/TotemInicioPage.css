@@ -102,7 +102,7 @@
 
 .inicio-toque-text {
   font-family: 'Montserrat', sans-serif;
-  font-size: 1.35rem;
+  font-size: 1.5rem;
   font-weight: 700;
   color: white;
   animation: inicio-pulse-label 2.2s ease-in-out infinite;
@@ -119,21 +119,29 @@
   letter-spacing: 0.15em;
 }
 
-/* Botão invisível — fechar caixa */
-.inicio-btn-fechar {
+/* Grupo de botões admin — canto superior direito */
+.inicio-btns-admin {
   position: absolute;
   top: 1.25rem;
   right: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  z-index: 10;
+}
+
+/* Botões invisíveis — fechar caixa / sair */
+.inicio-btn-fechar {
   width: 44px; height: 44px;
   border-radius: 50%;
   border: none;
   background: transparent;
   color: rgba(255,255,255,0.08);
-  font-size: 1.2rem;
+  font-size: 1.3rem;
   cursor: pointer;
   display: flex; align-items: center; justify-content: center;
   transition: color 0.3s, background 0.3s;
-  z-index: 10;
 }
 .inicio-btn-fechar:hover {
   color: rgba(255,255,255,0.55);

@@ -68,7 +68,7 @@
 }
 
 .fechamento-desc {
-  font-size: 0.95rem;
+  font-size: 1rem;
   color: var(--ink-muted);
   font-weight: 400;
   text-align: center;
@@ -90,13 +90,31 @@
   border: 1px solid rgba(229,57,53,0.25);
   border-radius: var(--radius-md);
   padding: 0.9rem 1.1rem;
-  font-size: 0.85rem;
+  font-size: 1rem;
   color: var(--fenix-red);
   font-weight: 500;
   display: flex;
   align-items: flex-start;
   gap: 0.5rem;
   line-height: 1.5;
+}
+
+/* Info de estação e data de abertura */
+.fechamento-info-estacao {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
+  margin-top: 0.5rem;
+  font-size: 1rem;
+  color: var(--ink-disabled);
+  font-family: 'JetBrains Mono', monospace;
+  letter-spacing: 0.04em;
+}
+.fechamento-info-estacao span {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
 }
 
 /* Sucesso */
@@ -134,7 +152,7 @@
 }
 .fechamento-sucesso-msg {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 10px;
+  font-size: 1rem;
   font-weight: 500;
   text-transform: uppercase;
   letter-spacing: 0.15em;

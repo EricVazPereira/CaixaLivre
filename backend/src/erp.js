@@ -175,4 +175,52 @@ function gravaFormatoProduto(codPro, pesoGramas) {
 const pegaDadosEmpresa = () =>
   requisitarERP('GET', `${ERP_BASE}/PegaDadosEmpresa`);
 
-module.exports = { NM_ESTACAO, verificarCaixaAberto, abrirCaixaERP, gravarItensERP, fecharComandaERP, fecharCaixaERP, consultaFormatoProduto, gravaFormatoProduto, pegaDadosEmpresa };
+/**
+ * Cancela uma conta/venda no ERP (CancelarConta).
+ *
+ * @param {Object} opts
+ * @param {string} opts.nr_gerador       - Barcode/NRGERADOR da conta (ex: "000741")
+ * @param {string} [opts.valor_conta]    - Valor da conta (padrão "0")
+ * @param {string} [opts.valor_acrescimo]- Valor de acréscimo (padrão "0")
+ */
+async function cancelarContaERP({ nr_gerador, valor_conta = '0', valor_acrescimo = '0' }) {
+  return chamarERPPost('CancelarConta', {
+    nr_gerador:      String(nr_gerador),
+    nm_estacao:      NM_ESTACAO,
+    valor_conta:     String(valor_conta),
+    valor_acrescimo: String(valor_acrescimo),
+  }, 30_000);
+}
+
+/**
+ * Cancela um item individual da conta no ERP (CancelarItem).
+ * Retorna o array de itens ativos restantes na conta.
+ *
+ * @param {Object} opts
+ * @param {string} opts.nr_gerador  - NRGERADOR da conta (ex: "000741")
+ * @param {string} opts.ordem_item  - Contador do item na conta (ex: "0002")
+ */
+async function cancelarItemERP({ nr_gerador, ordem_item }) {
+  return chamarERPPost('CancelarItem', {
+    nr_gerador:  String(nr_gerador),
+    ordem_item:  String(ordem_item),
+  }, 15_000);
+}
+
+/**
+ * Verifica se o usuário tem permissão para executar uma função no ERP.
+ * @param {Object} opts
+ * @param {string} opts.funcao  - Código da função (ex: "CANCEL_CONTA_CX_FUN")
+ * @param {string} opts.codigo  - Código do usuário (default "0")
+ * @param {string} opts.senha   - Senha / PIN do funcionário
+ * @returns {{ Resultado: "True"|"False", Mensagem: string }}
+ */
+async function verificarPermissaoERP({ funcao, codigo = '0', senha }) {
+  return chamarERPPost('VerificaPermissaoUsuario', {
+    funcao:  String(funcao),
+    codigo:  String(codigo),
+    senha:   String(senha),
+  }, 10_000);
+}
+
+module.exports = { NM_ESTACAO, verificarCaixaAberto, abrirCaixaERP, gravarItensERP, fecharComandaERP, fecharCaixaERP, consultaFormatoProduto, gravaFormatoProduto, pegaDadosEmpresa, cancelarContaERP, cancelarItemERP, verificarPermissaoERP };

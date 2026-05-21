@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CaixaLivre</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;700;800&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Montserrat', 'Segoe UI', system-ui, sans-serif;
+      background: linear-gradient(145deg, #06121F 0%, #0B2D50 55%, #0A4070 100%);
+      color: #fff;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 20px;
+      user-select: none;
+      overflow: hidden;
+    }
+
+    .orb {
+      position: fixed;
+      border-radius: 50%;
+      pointer-events: none;
+    }
+    .orb-1 {
+      width: 400px; height: 400px;
+      background: radial-gradient(circle, rgba(0,139,195,0.20) 0%, transparent 70%);
+      top: -15%; right: -10%;
+      filter: blur(60px);
+    }
+    .orb-2 {
+      width: 300px; height: 300px;
+      background: radial-gradient(circle, rgba(0,205,43,0.08) 0%, transparent 70%);
+      bottom: -10%; left: -5%;
+      filter: blur(70px);
+    }
+
+    /* ── Estado normal (iniciando) ── */
+    #estado-normal {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 20px;
+      transition: opacity 0.3s;
+    }
+
+    .logo-mark {
+      width: 72px; height: 72px;
+      background: linear-gradient(135deg, #008BC3 0%, #00CD2B 100%);
+      border-radius: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 16px 48px rgba(0,139,195,0.45), 0 0 0 1px rgba(255,255,255,0.08);
+    }
+    .logo-mark svg {
+      width: 36px; height: 36px;
+      stroke: white;
+      fill: none;
+      stroke-width: 1.5;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .logo-text {
+      font-size: 2.4rem;
+      font-weight: 800;
+      letter-spacing: -0.04em;
+      color: white;
+      line-height: 1;
+    }
+    .logo-text span { color: #008BC3; }
+
+    .spinner {
+      width: 36px; height: 36px;
+      border: 2.5px solid rgba(0,139,195,0.20);
+      border-top-color: #008BC3;
+      border-radius: 50%;
+      animation: spin 0.75s linear infinite;
+      margin-top: 8px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    #status {
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: rgba(255,255,255,0.35);
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      min-height: 1.2em;
+    }
+
+    /* ── Estado de erro (balança) ── */
+    #estado-erro {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      gap: 20px;
+      animation: fade-in 0.35s ease;
+      max-width: 340px;
+      text-align: center;
+    }
+    @keyframes fade-in {
+      from { opacity: 0; transform: translateY(12px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .erro-icone {
+      width: 72px; height: 72px;
+      border-radius: 50%;
+      background: rgba(229,57,53,0.15);
+      border: 1.5px solid rgba(229,57,53,0.35);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 0 14px rgba(229,57,53,0.06);
+      animation: shake 0.5s cubic-bezier(0.36,0.07,0.19,0.97) 0.2s both;
+    }
+    @keyframes shake {
+      0%,100% { transform: rotate(0deg);  }
+      20%     { transform: rotate(-8deg); }
+      40%     { transform: rotate(7deg);  }
+      60%     { transform: rotate(-5deg); }
+      80%     { transform: rotate(3deg);  }
+    }
+    .erro-icone svg {
+      width: 32px; height: 32px;
+      stroke: #ef5350;
+      fill: none;
+      stroke-width: 1.5;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .erro-titulo {
+      font-size: 1.25rem;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      color: white;
+      line-height: 1.3;
+    }
+
+    .erro-desc {
+      font-size: 0.82rem;
+      font-weight: 500;
+      color: rgba(255,255,255,0.55);
+      line-height: 1.6;
+    }
+
+    .erro-btns {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      width: 100%;
+      margin-top: 8px;
+    }
+
+    .btn-retry {
+      width: 100%;
+      height: 52px;
+      border-radius: 14px;
+      border: none;
+      background: #008BC3;
+      color: white;
+      font-family: 'Montserrat', 'Segoe UI', system-ui, sans-serif;
+      font-size: 0.88rem;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+      cursor: pointer;
+      box-shadow: 0 8px 24px rgba(0,139,195,0.40);
+      transition: filter 0.15s, transform 0.15s;
+    }
+    .btn-retry:hover  { filter: brightness(1.10); transform: translateY(-1px); }
+    .btn-retry:active { filter: brightness(0.95); transform: translateY(0); }
+
+    .btn-continuar {
+      width: 100%;
+      height: 44px;
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.18);
+      background: transparent;
+      color: rgba(255,255,255,0.55);
+      font-family: 'Montserrat', 'Segoe UI', system-ui, sans-serif;
+      font-size: 0.78rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s, color 0.15s;
+    }
+    .btn-continuar:hover {
+      background: rgba(255,255,255,0.07);
+      color: rgba(255,255,255,0.80);
+    }
+  </style>
+</head>
+<body>
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+
+  <!-- Estado: iniciando normalmente -->
+  <div id="estado-normal">
+    <div class="logo-mark">
+      <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <rect x="5" y="3" width="14" height="18" rx="2" />
+        <circle cx="12" cy="17" r="1" fill="white" stroke="none" />
+      </svg>
+    </div>
+
+    <div class="logo-text">Caixa<span>Livre</span></div>
+
+    <div class="spinner"></div>
+
+    <div id="status">Iniciando…</div>
+  </div>
+
+  <!-- Estado: erro de balança -->
+  <div id="estado-erro">
+    <div class="erro-icone">
+      <!-- ícone de balança com X -->
+      <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <path d="M12 3v1M6 7l1.5 5a4.5 4.5 0 0 0 9 0L18 7"/>
+        <line x1="3" y1="7" x2="21" y2="7"/>
+        <line x1="12" y1="4" x2="5" y2="7"/>
+        <line x1="12" y1="4" x2="19" y2="7"/>
+        <line x1="12" y1="17" x2="12" y2="21"/>
+        <line x1="8" y1="21" x2="16" y2="21"/>
+        <line x1="17" y1="2" x2="21" y2="6"/>
+        <line x1="21" y1="2" x2="17" y2="6"/>
+      </svg>
+    </div>
+
+    <p class="erro-titulo">A balança não está respondendo</p>
+
+    <p class="erro-desc">Verifique se o cabo está conectado.</p>
+
+    <div class="erro-btns">
+      <button class="btn-retry" onclick="window.electronAPI?.retry()">
+        Tentar novamente
+      </button>
+      <button class="btn-continuar" onclick="window.electronAPI?.continuar()">
+        Continuar sem balança
+      </button>
+    </div>
+  </div>
+
+  <script>
+    function showError() {
+      document.getElementById('estado-normal').style.display = 'none'
+      const err = document.getElementById('estado-erro')
+      err.style.display = 'flex'
+      // Reinicia animação do ícone para que shake toque de novo
+      const ic = err.querySelector('.erro-icone')
+      ic.style.animation = 'none'
+      ic.offsetHeight // reflow
+      ic.style.animation = ''
+    }
+
+    function hideError() {
+      document.getElementById('estado-erro').style.display = 'none'
+      document.getElementById('estado-normal').style.display = 'flex'
+    }
+  </script>
+</body>
+</html>
