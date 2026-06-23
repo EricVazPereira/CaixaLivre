@@ -12,7 +12,8 @@
 const express       = require('express')
 const cors          = require('cors')
 const { AGENTE_PORTA }                       = require('./config')
-const { router: balancaRouter, portManager } = require('./routes/balanca')
+const { router: balancaRouter,      portManager: portManagerPrincipal } = require('./routes/balanca')
+const { router: balancaTotemRouter, portManager: portManagerTotem }    = require('./routes/balanca-totem')
 
 const app = express()
 
@@ -22,7 +23,8 @@ app.use(express.json())
 // Health-check — usado pelo Electron para saber que o agente está pronto
 app.get('/api/health', (_req, res) => res.json({ ok: true }))
 
-app.use('/api/balanca', balancaRouter)
+app.use('/api/balanca',       balancaRouter)
+app.use('/api/balanca-totem', balancaTotemRouter)
 
 app.use((err, _req, res, _next) => {
   console.error(err)
@@ -40,7 +42,7 @@ async function start() {
   return new Promise((resolve, reject) => {
     const server = app.listen(AGENTE_PORTA, 'localhost', () => {
       console.log(`✅ Agente local CaixaLivre rodando em http://localhost:${AGENTE_PORTA}`)
-      resolve({ server, portManager })
+      resolve({ server, portManager: portManagerPrincipal, portManagerTotem })
     })
     server.on('error', reject)
   })
@@ -52,7 +54,8 @@ if (require.main === module) {
     .then(({ server, portManager }) => {
       function shutdown(signal) {
         console.log(`\n🛑 ${signal} recebido — encerrando agente...`)
-        if (portManager) portManager.close()
+        if (portManagerPrincipal) portManagerPrincipal.close()
+        if (portManagerTotem)    portManagerTotem.close()
         server.close(() => {
           console.log('✅ Agente encerrado')
           process.exit(0)

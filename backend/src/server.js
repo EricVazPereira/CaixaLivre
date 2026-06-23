@@ -7,6 +7,7 @@ const fs      = require('fs')
 const { SERVIDOR_PORTA, AGENTE_PORTA, NM_ESTACAO } = require('./config')
 
 const produtosRouter   = require('./routes/produtos')
+const pesagemRouter    = require('./routes/pesagem')
 const contasRouter     = require('./routes/contas')
 const historicoRouter  = require('./routes/historico')
 const impressoraRouter = require('./routes/impressora')
@@ -23,29 +24,34 @@ app.use(express.json())
 // Health-check — usado pelo Electron para saber que o servidor está pronto
 app.get('/api/health', (_req, res) => res.json({ ok: true }))
 
-// /api/balanca/* → proxy para o agente local (único dono da porta serial)
-app.use('/api/balanca', (req, res) => {
-  const proxyReq = http.request(
-    {
-      hostname: 'localhost',
-      port:     AGENTE_PORTA,
-      path:     '/api/balanca' + req.url,
-      method:   req.method,
-      headers:  { ...req.headers, host: `localhost:${AGENTE_PORTA}` },
-    },
-    proxyRes => {
-      res.writeHead(proxyRes.statusCode, proxyRes.headers)
-      proxyRes.pipe(res)
-    }
-  )
-  proxyReq.on('error', () => {
-    if (!res.headersSent)
-      res.status(503).json({ ok: false, habilitada: false, erro: 'Agente não disponível' })
-  })
-  // GET: sem body. POST (/reconectar): pipe do body do request.
-  if (req.method === 'POST') req.pipe(proxyReq)
-  else proxyReq.end()
-})
+// /api/balanca/* e /api/balanca-totem/* → proxy para o agente local
+function proxyAgente(prefixo) {
+  return (req, res) => {
+    const proxyReq = http.request(
+      {
+        hostname: 'localhost',
+        port:     AGENTE_PORTA,
+        path:     prefixo + req.url,
+        method:   req.method,
+        headers:  { ...req.headers, host: `localhost:${AGENTE_PORTA}` },
+      },
+      proxyRes => {
+        res.writeHead(proxyRes.statusCode, proxyRes.headers)
+        proxyRes.pipe(res)
+      }
+    )
+    proxyReq.on('error', () => {
+      if (!res.headersSent)
+        res.status(503).json({ ok: false, habilitada: false, erro: 'Agente não disponível' })
+    })
+    if (req.method === 'POST') req.pipe(proxyReq)
+    else proxyReq.end()
+  }
+}
+
+app.use('/api/balanca-totem', proxyAgente('/api/balanca-totem'))
+
+app.use('/api/balanca', proxyAgente('/api/balanca'))
 
 app.use('/api/produtos',   produtosRouter)
 app.use('/api/contas',     contasRouter)
@@ -54,6 +60,7 @@ app.use('/api/impressora', impressoraRouter)
 app.use('/api/auth',       authRouter)
 app.use('/api/sitef',      sitefRouter)
 app.use('/api/config',     configRouter)
+app.use('/api/pesagem',    pesagemRouter)
 
 // Imagens do cliente — servidas de \img\ ao lado do executável
 // Permite trocar logo.bmp sem recompilar o app

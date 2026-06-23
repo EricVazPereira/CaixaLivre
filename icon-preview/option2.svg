@@ -1,0 +1,59 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="512" y2="512" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#06121F"/>
+      <stop offset="100%" stop-color="#0A2E4E"/>
+    </linearGradient>
+    <linearGradient id="screen-glow" x1="0" y1="100" x2="0" y2="326" gradientUnits="userSpaceOnUse">
+      <stop offset="0%"   stop-color="#008BC3" stop-opacity="0.22"/>
+      <stop offset="100%" stop-color="#00CD2B" stop-opacity="0.08"/>
+    </linearGradient>
+    <linearGradient id="scan" x1="178" y1="0" x2="334" y2="0" gradientUnits="userSpaceOnUse">
+      <stop offset="0%"   stop-color="#008BC3"/>
+      <stop offset="100%" stop-color="#00CD2B"/>
+    </linearGradient>
+    <filter id="glow-scan">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="4" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="512" height="512" rx="112" fill="url(#bg)"/>
+
+  <!-- Ambient glow behind totem -->
+  <ellipse cx="256" cy="220" rx="130" ry="180" fill="rgba(0,139,195,0.07)"/>
+
+  <!-- ── Totem bezel (main screen body) ── -->
+  <!-- Semi-transparent fill so screen area is visible against bg -->
+  <rect x="158" y="62" width="196" height="296" rx="24"
+    fill="rgba(14,44,72,0.55)" stroke="white" stroke-width="20"/>
+
+  <!-- Camera dot (top center) -->
+  <circle cx="256" cy="84" r="10" fill="rgba(255,255,255,0.45)"/>
+
+  <!-- Screen display area (lit) -->
+  <rect x="178" y="104" width="156" height="220" rx="10" fill="url(#screen-glow)"/>
+
+  <!-- Product info bars (above scan line) — simulates item being scanned -->
+  <rect x="198" y="126" width="116" height="9"  rx="4" fill="rgba(255,255,255,0.28)"/>
+  <rect x="198" y="143" width="84"  height="7"  rx="3" fill="rgba(255,255,255,0.18)"/>
+  <rect x="198" y="158" width="60"  height="7"  rx="3" fill="rgba(255,255,255,0.11)"/>
+
+  <!-- Scan beam (with glow) -->
+  <rect x="178" y="208" width="156" height="22" rx="11" fill="url(#scan)" opacity="0.2" filter="url(#glow-scan)"/>
+  <rect x="178" y="213" width="156" height="12" rx="6"  fill="url(#scan)"/>
+
+  <!-- Price lines (below scan line) -->
+  <rect x="198" y="239" width="96" height="9"  rx="4" fill="rgba(255,255,255,0.18)"/>
+  <rect x="198" y="255" width="70" height="7"  rx="3" fill="rgba(255,255,255,0.12)"/>
+
+  <!-- Home indicator pill (inside bezel, below screen) -->
+  <rect x="228" y="332" width="56" height="9" rx="4" fill="rgba(255,255,255,0.28)"/>
+
+  <!-- ── Stand (pole) ── -->
+  <rect x="234" y="358" width="44" height="46" rx="6" fill="white" opacity="0.85"/>
+
+  <!-- ── Base ── -->
+  <rect x="148" y="402" width="216" height="28" rx="14" fill="white" opacity="0.85"/>
+</svg>

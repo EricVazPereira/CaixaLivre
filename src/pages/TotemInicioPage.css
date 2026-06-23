@@ -46,19 +46,24 @@
   align-items: center;
   position: relative;
   z-index: 1;
+  margin-top: -6vh;
 }
 
 .inicio-logo-mark {
-  width: 96px; height: 96px;
-  background: linear-gradient(135deg, var(--fenix-blue) 0%, var(--fenix-green) 100%);
-  border-radius: 28px;
+  width: 312px; height: 312px;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 24px 64px rgba(0,139,195,0.45), 0 0 0 1px rgba(255,255,255,0.08);
   margin-bottom: 1.75rem;
+  flex-shrink: 0;
+  filter: drop-shadow(0 12px 32px rgba(0,139,195,0.45));
 }
-.inicio-logo-mark iconify-icon { font-size: 3rem; color: white; }
+.inicio-logo-svg {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
 
 .inicio-logo-text {
   font-family: 'Montserrat', sans-serif;
@@ -119,32 +124,72 @@
   letter-spacing: 0.15em;
 }
 
-/* Grupo de botões admin — canto superior direito */
-.inicio-btns-admin {
+/* Gatilho invisível — canto superior direito, toque longo revela admin */
+.inicio-admin-trigger {
   position: absolute;
-  top: 1.25rem;
-  right: 1.25rem;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.4rem;
-  z-index: 10;
+  top: 0;
+  right: 0;
+  width: 80px;
+  height: 80px;
+  cursor: default;
+  -webkit-user-select: none;
+  user-select: none;
+  z-index: 20;
 }
 
-/* Botões invisíveis — fechar caixa / sair */
-.inicio-btn-fechar {
-  width: 44px; height: 44px;
-  border-radius: 50%;
-  border: none;
-  background: transparent;
-  color: rgba(255,255,255,0.08);
-  font-size: 1.3rem;
+/* Admin panel — long-press reveal, canto inferior direito */
+@keyframes admin-panel-in {
+  from { opacity: 0; transform: translateY(10px) scale(0.96); }
+  to   { opacity: 1; transform: translateY(0)    scale(1); }
+}
+
+.inicio-admin-panel {
+  position: absolute;
+  bottom: 1.75rem;
+  right: 1.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  z-index: 10;
+  animation: admin-panel-in 0.28s cubic-bezier(0.16,1,0.3,1) both;
+}
+
+.inicio-admin-hint {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.25);
+  text-align: right;
+  margin-bottom: 0.1rem;
+}
+
+.inicio-admin-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.65rem 1.1rem;
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,0.12);
+  background: rgba(8,18,32,0.80);
+  color: rgba(255,255,255,0.65);
+  font-family: 'Montserrat', sans-serif;
+  font-size: 0.85rem;
+  font-weight: 600;
   cursor: pointer;
-  display: flex; align-items: center; justify-content: center;
-  transition: color 0.3s, background 0.3s;
+  transition: background 0.2s, color 0.2s, border-color 0.2s;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  white-space: nowrap;
 }
-.inicio-btn-fechar:hover {
-  color: rgba(255,255,255,0.55);
-  background: rgba(255,255,255,0.07);
+.inicio-admin-btn iconify-icon {
+  font-size: 1.1rem;
 }
+.inicio-admin-btn:hover {
+  background: rgba(0,139,195,0.20);
+  color: white;
+  border-color: rgba(0,139,195,0.40);
+}
+
 

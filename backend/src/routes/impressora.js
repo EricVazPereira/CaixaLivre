@@ -904,7 +904,7 @@ function montarCupomESCPOS({
   ), CMD_BOLD_OFF)
 
   itens.forEach((item, i) => {
-    const isPeso = UNIDADES_PESO.has(String(item.unidade || '').toUpperCase())
+    const isPeso = UNIDADES_PESO.has(String(item.unidade || '').toUpperCase()) || item.tipo_pesagem === true
     const texto  = isPeso ? linhaItemKG(i + 1, item) : linhaItemUN(i + 1, item)
     add(Buffer.from(da(texto) + '\n', 'latin1'))
   })

@@ -100,13 +100,19 @@ async function gravarItensERP({ id = '', nrMesa = '', consumo = [] }) {
       nm_estacao: NM_ESTACAO,
       NrMesa:     nrMesa,
     },
-    consumo: consumo.map(item => ({
-      Cod_pro:   String(item.produto_codigo).padStart(14, '0'),
-      Obs_pro:   item.obs || '',
-      Qtde_pro:  String(item.quantidade),
-      Vl_Pro:    (Number(item.vl_unitario) * Number(item.quantidade)).toFixed(2),
-      Acomp_Pro: '',
-    })),
+    consumo: consumo.map(item => {
+      const qtd = Number(item.quantidade)
+      const vlr = Number(item.vl_unitario)
+      const mapped = {
+        Cod_pro:   String(item.produto_codigo).padStart(14, '0'),
+        Obs_pro:   item.obs || '',
+        Qtde_pro:  String(qtd),            // ponto decimal — ex: "0.244"
+        Vl_Pro:    (vlr * qtd).toFixed(2), // total — ex: "3.90"
+        Acomp_Pro: '',
+      }
+      console.log('[GravaItens] item mapeado:', JSON.stringify(mapped))
+      return mapped
+    }),
   }, 30_000);
 }
 
@@ -223,4 +229,13 @@ async function verificarPermissaoERP({ funcao, codigo = '0', senha }) {
   }, 10_000);
 }
 
-module.exports = { NM_ESTACAO, verificarCaixaAberto, abrirCaixaERP, gravarItensERP, fecharComandaERP, fecharCaixaERP, consultaFormatoProduto, gravaFormatoProduto, pegaDadosEmpresa, cancelarContaERP, cancelarItemERP, verificarPermissaoERP };
+/**
+ * Retorna o cardápio completo de produtos pesáveis (ConsultaCardapio).
+ * Inclui todos os itens com campos: cod_pro, ds_pro, ds_familia, cod_familia,
+ * cod_sfam, ds_sfam, un_pro, preco_pro, acompanhamento.
+ */
+function consultaCardapio() {
+  return requisitarERP('GET', `${ERP_BASE}/ConsultaCardapio`)
+}
+
+module.exports = { NM_ESTACAO, verificarCaixaAberto, abrirCaixaERP, gravarItensERP, fecharComandaERP, fecharCaixaERP, consultaFormatoProduto, gravaFormatoProduto, pegaDadosEmpresa, cancelarContaERP, cancelarItemERP, verificarPermissaoERP, consultaCardapio };

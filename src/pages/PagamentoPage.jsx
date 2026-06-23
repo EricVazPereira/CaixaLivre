@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useState, useEffect, useRef } from 'react'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { useCarrinhoStore } from '../store/carrinhoStore'
 import { useCaixaStore } from '../store/caixaStore'
 import { fecharComanda, imprimirCupom, realizarPagamentoCartao, buscarConfig } from '../services/api'
@@ -19,14 +19,24 @@ function formaFromSitef(resultado) {
 }
 
 export default function PagamentoPage() {
-  const navigate = useNavigate()
+  const navigate  = useNavigate()
+  const location  = useLocation()
+  const autoConfirmarRef = useRef(location.state?.autoConfirmar === true)
 
   // ── Config ────────────────────────────────────────────────────────────────
   const [sitefHabilitado, setSitefHabilitado] = useState(null) // null = carregando
 
   useEffect(() => {
-    buscarConfig().then(cfg => setSitefHabilitado(cfg.sitefHabilitado === true))
-  }, [])
+    buscarConfig().then(cfg => {
+      const hab = cfg.sitefHabilitado === true
+      setSitefHabilitado(hab)
+      // Se veio da OperacaoPage com autoConfirmar e SiTef habilitado → executa direto
+      if (hab && autoConfirmarRef.current) {
+        autoConfirmarRef.current = false
+        executarSiTef()
+      }
+    })
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Estado do pagamento ───────────────────────────────────────────────────
   const [formaSelecionada, setFormaSelecionada] = useState(null)
@@ -58,7 +68,7 @@ export default function PagamentoPage() {
       })
       setErpBarcode('')
       imprimirCupom({
-        itens: itens.map(item => ({
+        itens: itens.filter(i => !i.cancelado).map(item => ({
           produto_codigo: item.codigo,
           descricao:      item.descricao,
           quantidade:     item.quantidade,
@@ -107,6 +117,8 @@ export default function PagamentoPage() {
         return
       }
 
+      // Cartão aprovado — exibe tela intermediária enquanto fecha a venda no ERP
+      setSitefEtapa('aguardando_aprovacao')
       setSitefInfo(resultado)
       await finalizarVenda(resultado, formaFromSitef(resultado))
     } catch (e) {
@@ -154,12 +166,23 @@ export default function PagamentoPage() {
               <div className="sitef-espera-valor">R$ {total.toFixed(2).replace('.', ',')}</div>
               <div className="sitef-espera-loader">
                 <iconify-icon icon="tabler:loader-2" class="spin" style={{ fontSize: '1.4rem' }} />
-                <span className="label-mono" style={{ fontSize: '1rem', opacity: 0.6 }}>Processando cartão…</span>
+                <span className="label-mono" style={{ fontSize: '1rem', opacity: 0.6 }}>Aguardando cartão…</span>
+              </div>
+            </>}
+
+            {sitefEtapa === 'aguardando_aprovacao' && <>
+              <iconify-icon icon="tabler:shield-check" class="sitef-espera-icon" style={{ color: 'var(--fenix-blue)' }} />
+              <span className="sitef-espera-titulo">Aguardando aprovação</span>
+              <span className="sitef-espera-sub">Cartão lido — consultando o banco…</span>
+              <div className="sitef-espera-valor">R$ {total.toFixed(2).replace('.', ',')}</div>
+              <div className="sitef-espera-loader">
+                <iconify-icon icon="tabler:loader-2" class="spin" style={{ fontSize: '1.4rem' }} />
+                <span className="label-mono" style={{ fontSize: '1rem', opacity: 0.6 }}>Processando…</span>
               </div>
             </>}
 
             {sitefEtapa === 'fechando' && <>
-              <iconify-icon icon="tabler:circle-check" class="sitef-espera-icon" style={{ color: 'var(--color-green, #27ae60)' }} />
+              <iconify-icon icon="tabler:circle-check" class="sitef-espera-icon" style={{ color: '#27ae60' }} />
               <span className="sitef-espera-titulo">Pagamento aprovado!</span>
               <span className="sitef-espera-sub">Finalizando venda…</span>
               <div className="sitef-espera-loader">
@@ -171,9 +194,7 @@ export default function PagamentoPage() {
               <iconify-icon icon="tabler:credit-card-off" class="sitef-espera-icon" style={{ color: '#e74c3c' }} />
               <span className="sitef-espera-titulo">Pagamento não aprovado</span>
               <span className="sitef-espera-sub">
-                {sitefInfo?.nomeProduto
-                  ? `Motivo: ${sitefInfo.nomeProduto}`
-                  : 'Tente outro cartão ou forma de pagamento.'}
+                {sitefInfo?.mensagemErro || sitefInfo?.nomeProduto || 'Tente outro cartão ou forma de pagamento.'}
               </span>
               <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1.5rem', width: '100%', justifyContent: 'center' }}>
                 <button className="btn-fenix" onClick={() => navigate('/operacao')}>
@@ -205,22 +226,28 @@ export default function PagamentoPage() {
         {/* ── Resumo ────────────────────────────────────────────────────────── */}
         <div className="resumo-col reveal-blur d-2 active">
           <div className="resumo-header-row">
+            <span>Nº</span>
             <span>Produto</span>
             <span style={{ textAlign: 'right' }}>Qtd</span>
-            <span style={{ textAlign: 'right' }}>Unit.</span>
+            <span style={{ textAlign: 'right' }}>VL Un.</span>
             <span style={{ textAlign: 'right' }}>Total</span>
           </div>
           <div className="resumo-itens">
             {itens.map((item, index) => (
               <div
-                key={item.codigo}
-                className="resumo-item"
+                key={item.id ?? item.codigo}
+                className={`resumo-item${item.cancelado ? ' resumo-item--cancelado' : ''}`}
                 style={{ animationDelay: `${index * 0.04}s` }}
               >
+                <span className="resumo-item-ordinal">{item.ordinal ?? index + 1}</span>
                 <span className="resumo-item-nome">{item.descricao}</span>
                 <span className="resumo-item-qtd">{item.quantidade} {item.unidade}</span>
                 <span className="resumo-item-preco">R$ {item.valor_unitario.toFixed(2)}</span>
-                <span className="resumo-item-valor">R$ {(item.valor_unitario * item.quantidade).toFixed(2)}</span>
+                <span className="resumo-item-valor">
+                  {item.cancelado
+                    ? <s>R$ {(item.valor_unitario * item.quantidade).toFixed(2)}</s>
+                    : `R$ ${(item.valor_unitario * item.quantidade).toFixed(2)}`}
+                </span>
               </div>
             ))}
           </div>

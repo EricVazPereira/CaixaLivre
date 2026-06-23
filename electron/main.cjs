@@ -18,6 +18,11 @@ const http = require('http')
 // ── Caminhos ──────────────────────────────────────────────────────────────────
 const isDev = !app.isPackaged
 
+// Ícone do app (ICO no Windows)
+const appIcon = isDev
+  ? path.join(__dirname, '..', 'build', 'icon.ico')
+  : path.join(process.resourcesPath, 'icon.ico')
+
 // Em dev:   raiz do projeto  (electron/../)
 // Em prod:  process.resourcesPath  (pasta resources/ ao lado do .exe)
 const resourcesDir = isDev
@@ -141,6 +146,7 @@ async function iniciar() {
     resizable: false,
     transparent: false,
     backgroundColor: '#06121F',
+    icon: appIcon,
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
@@ -204,6 +210,8 @@ async function iniciar() {
       height: 800,
       fullscreen: true,
       autoHideMenuBar: true,
+      icon: appIcon,
+      backgroundColor: '#F5F5F5',
       webPreferences: {
         nodeIntegration: false,
         contextIsolation: true,

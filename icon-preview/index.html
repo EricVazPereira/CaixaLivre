@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>CaixaLivre — Opções de Ícone</title>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Montserrat', sans-serif;
+      background: #0F0F11;
+      color: #E4E4E8;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 3rem 2rem;
+      gap: 3rem;
+    }
+
+    header {
+      text-align: center;
+    }
+    header h1 {
+      font-size: 1.1rem;
+      font-weight: 700;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.35);
+    }
+    header p {
+      font-size: 0.85rem;
+      color: rgba(255,255,255,0.20);
+      margin-top: 0.4rem;
+      letter-spacing: 0.06em;
+    }
+
+    .grid {
+      display: flex;
+      gap: 3rem;
+      align-items: flex-start;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .icon-card {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1.5rem;
+    }
+
+    /* Sizes row */
+    .sizes {
+      display: flex;
+      gap: 1.25rem;
+      align-items: flex-end;
+    }
+
+    .size-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .size-label {
+      font-size: 0.65rem;
+      font-weight: 600;
+      letter-spacing: 0.10em;
+      color: rgba(255,255,255,0.22);
+      text-transform: uppercase;
+    }
+
+    /* The actual icon container with checkerboard for transparency check */
+    .icon-wrap {
+      border-radius: calc(var(--r) * 1px);
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+
+    .icon-wrap img,
+    .icon-wrap svg {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    /* Label below */
+    .card-label {
+      text-align: center;
+    }
+    .card-label strong {
+      display: block;
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: rgba(255,255,255,0.75);
+      letter-spacing: -0.01em;
+    }
+    .card-label span {
+      display: block;
+      font-size: 0.78rem;
+      font-weight: 500;
+      color: rgba(255,255,255,0.28);
+      margin-top: 0.25rem;
+      max-width: 180px;
+      line-height: 1.5;
+    }
+
+    /* Number badge */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px; height: 28px;
+      border-radius: 50%;
+      border: 1px solid rgba(0,139,195,0.35);
+      background: rgba(0,139,195,0.10);
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: #008BC3;
+      margin-bottom: 0.25rem;
+    }
+
+    footer {
+      font-size: 0.72rem;
+      color: rgba(255,255,255,0.15);
+      letter-spacing: 0.08em;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>CaixaLivre · Opções de ícone</h1>
+    <p>Selecione uma opção para aplicar ao programa</p>
+  </header>
+
+  <div class="grid">
+
+    <!-- OPTION 1: Cart + Scan Beam -->
+    <div class="icon-card">
+      <div class="badge">1</div>
+      <div class="sizes">
+        <!-- 256px -->
+        <div class="size-wrap">
+          <div class="icon-wrap" style="width:256px;height:256px;--r:56;">
+            <img src="option1.svg" alt="Opção 1"/>
+          </div>
+          <span class="size-label">256</span>
+        </div>
+        <!-- 64px -->
+        <div class="size-wrap">
+          <div class="icon-wrap" style="width:64px;height:64px;--r:14;">
+            <img src="option1.svg" alt="Opção 1 small"/>
+          </div>
+          <span class="size-label">64</span>
+        </div>
+        <!-- 32px -->
+        <div class="size-wrap">
+          <div class="icon-wrap" style="width:32px;height:32px;--r:7;">
+            <img src="option1.svg" alt="Opção 1 xs"/>
+          </div>
+          <span class="size-label">32</span>
+        </div>
+      </div>
+      <div class="card-label">
+        <strong>Carrinho + Scanner</strong>
+        <span>Carrinho minimalista com feixe de leitura azul → verde</span>
+      </div>
+    </div>
+
+    <!-- OPTION 2: CL Monogram -->
+    <div class="icon-card">
+      <div class="badge">2</div>
+      <div class="sizes">
+        <div class="size-wrap">
+          <div class="icon-wrap" style="width:256px;height:256px;--r:56;">
+            <img src="option2.svg" alt="Opção 2"/>
+          </div>
+          <span class="size-label">256</span>
+        </div>
+        <div class="size-wrap">
+          <div class="icon-wrap" style="width:64px;height:64px;--r:14;">
+            <img src="option2.svg" alt="Opção 2 small"/>
+          </div>
+          <span class="size-label">64</span>
+        </div>
+        <div class="size-wrap">
+          <div class="icon-wrap" style="width:32px;height:32px;--r:7;">
+            <img src="option2.svg" alt="Opção 2 xs"/>
+          </div>
+          <span class="size-label">32</span>
+        </div>
+      </div>
+      <div class="card-label">
+        <strong>Totem de autoatendimento</strong>
+        <span>Kiosk com tela iluminada, scan beam e base — o produto físico</span>
+      </div>
+    </div>
+
+    <!-- OPTION 3: Contactless Payment -->
+    <div class="icon-card">
+      <div class="badge">3</div>
+      <div class="sizes">
+        <div class="size-wrap">
+          <div class="icon-wrap" style="width:256px;height:256px;--r:56;">
+            <img src="option3.svg" alt="Opção 3"/>
+          </div>
+          <span class="size-label">256</span>
+        </div>
+        <div class="size-wrap">
+          <div class="icon-wrap" style="width:64px;height:64px;--r:14;">
+            <img src="option3.svg" alt="Opção 3 small"/>
+          </div>
+          <span class="size-label">64</span>
+        </div>
+        <div class="size-wrap">
+          <div class="icon-wrap" style="width:32px;height:32px;--r:7;">
+            <img src="option3.svg" alt="Opção 3 xs"/>
+          </div>
+          <span class="size-label">32</span>
+        </div>
+      </div>
+      <div class="card-label">
+        <strong>Pagamento contactless</strong>
+        <span>Cartão com ondas NFC e checkmark — o momento do pagamento</span>
+      </div>
+    </div>
+
+  </div>
+
+  <footer>Sistema Fênix · CaixaLivre · icon-preview</footer>
+
+</body>
+</html>

@@ -30,10 +30,10 @@
 .consulta-header-logo span { color: var(--fenix-blue); }
 
 .consulta-header-sub {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: 'Montserrat', sans-serif;
   font-size: 1rem;
   font-weight: 600;
-  text-transform: uppercase;
+
   letter-spacing: 0.2em;
   color: var(--ink-muted);
   margin-left: auto;
@@ -70,10 +70,10 @@
 .stat-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
 
 .stat-card-label {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: 'Montserrat', sans-serif;
   font-size: 1rem;
   font-weight: 600;
-  text-transform: uppercase;
+
   letter-spacing: 0.2em;
   color: var(--ink-muted);
 }
@@ -88,10 +88,10 @@
 
 /* ── Lista de cupons ── */
 .cupons-section-title {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: 'Montserrat', sans-serif;
   font-size: 1rem;
   font-weight: 600;
-  text-transform: uppercase;
+
   letter-spacing: 0.2em;
   color: var(--ink-muted);
   padding-bottom: 0.5rem;
@@ -142,7 +142,7 @@
 }
 
 .cupom-id {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: 'Montserrat', sans-serif;
   font-size: 1rem;
   font-weight: 600;
   color: var(--ink-muted);
@@ -165,10 +165,10 @@
   color: var(--ink-secondary);
 }
 .cupom-forma {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: 'Montserrat', sans-serif;
   font-size: 1rem;
   font-weight: 500;
-  text-transform: uppercase;
+
   letter-spacing: 0.12em;
   color: var(--ink-muted);
   display: flex;
@@ -185,10 +185,10 @@
 }
 
 .cupom-status {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: 'Montserrat', sans-serif;
   font-size: 1rem;
   font-weight: 600;
-  text-transform: uppercase;
+
   letter-spacing: 0.15em;
   padding: 0.25rem 0.7rem;
   border-radius: var(--radius-pill);
@@ -217,10 +217,10 @@
   padding-bottom: 0.4rem;
   margin-bottom: 0.4rem;
   border-bottom: 1px solid rgba(0,139,195,0.08);
-  font-family: 'JetBrains Mono', monospace;
+  font-family: 'Montserrat', sans-serif;
   font-size: 1rem;
   font-weight: 600;
-  text-transform: uppercase;
+
   letter-spacing: 0.12em;
   color: var(--ink-muted);
 }
@@ -236,7 +236,7 @@
 .item-row:last-child { border-bottom: none; }
 .item-desc { font-weight: 500; }
 .item-qtd, .item-vunit, .item-vtotal {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: 'Montserrat', sans-serif;
   font-size: 1rem;
   text-align: right;
 }

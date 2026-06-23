@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useCaixaStore } from '../store/caixaStore'
 import { verificarStatusCaixa, abrirCaixa, testarBalanca } from '../services/api'
+import IconBalanca from '../components/IconBalanca'
 import './AberturaCaixaPage.css'
 
 export default function AberturaCaixaPage() {
@@ -13,7 +14,29 @@ export default function AberturaCaixaPage() {
   const [abrindo, setAbrindo]               = useState(false)
   const [erro, setErro]                     = useState('')
   const [balancaOk, setBalancaOk]           = useState(true)
+  const [modoSemBalanca, setModoSemBalanca] = useState(false)
   const [estacaoNaoCadastrada, setEstacaoNaoCadastrada] = useState(false)
+
+  // Gatilho invisível — segure 1,5s no canto superior direito para revelar "Sair"
+  const [adminVisible, setAdminVisible] = useState(false)
+  const pressTimer = useRef(null)
+  const hideTimer  = useRef(null)
+
+  useEffect(() => {
+    if (adminVisible) {
+      hideTimer.current = setTimeout(() => setAdminVisible(false), 4000)
+    }
+    return () => clearTimeout(hideTimer.current)
+  }, [adminVisible])
+
+  const startPress = (e) => {
+    e.stopPropagation()
+    pressTimer.current = setTimeout(() => setAdminVisible(true), 1500)
+  }
+  const cancelPress = (e) => {
+    e?.stopPropagation()
+    clearTimeout(pressTimer.current)
+  }
 
   useEffect(() => { verificar() }, [])
 
@@ -62,16 +85,94 @@ export default function AberturaCaixaPage() {
     }
   }
 
+  // ── Tela dedicada quando balança não responde ─────────────────────────────
+  if (!balancaOk && !modoSemBalanca && !carregando) {
+    return (
+      <div className="abertura-root">
+        <div className="abertura-orb abertura-orb-1" />
+        <div className="abertura-orb abertura-orb-2" />
+
+        <div className="abertura-card">
+          <div className="abertura-balanca-icone reveal-blur active">
+            <IconBalanca size={48} />
+          </div>
+
+          <h2 className="abertura-balanca-titulo reveal d-1 active">
+            A balança não está respondendo
+          </h2>
+          <p className="abertura-balanca-sub reveal d-2 active">
+            Verifique se o cabo está conectado.
+          </p>
+
+          <div className="abertura-btn-wrap reveal d-3 active">
+            <button
+              className="btn-fenix btn-blue"
+              onClick={verificar}
+              disabled={carregando}
+            >
+              <IconBalanca size={20} />
+              Tentar novamente
+            </button>
+            <button
+              className="btn-fenix"
+              onClick={() => setModoSemBalanca(true)}
+              style={{
+                background: 'transparent',
+                color: 'var(--ink-muted)',
+                boxShadow: 'none',
+                border: '1px solid rgba(0,139,195,0.20)',
+                height: '56px',
+                fontSize: '1rem',
+              }}
+            >
+              Continuar sem balança
+            </button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="abertura-root">
       <div className="abertura-orb abertura-orb-1" />
       <div className="abertura-orb abertura-orb-2" />
 
+      {/* Gatilho invisível no canto superior direito — segure 1,5s para revelar "Sair" */}
+      <div
+        className="abertura-admin-trigger"
+        onMouseDown={startPress}
+        onMouseUp={cancelPress}
+        onMouseLeave={cancelPress}
+        onTouchStart={startPress}
+        onTouchEnd={cancelPress}
+        onTouchCancel={cancelPress}
+        onClick={e => e.stopPropagation()}
+      />
+
+      {adminVisible && (
+        <div className="abertura-admin-panel" onClick={e => e.stopPropagation()}>
+          <button
+            className="abertura-admin-btn"
+            onClick={() => window.close()}
+          >
+            <iconify-icon icon="tabler:logout" />
+            Sair
+          </button>
+        </div>
+      )}
+
       <div className="abertura-card">
+
+        {/* Label de contexto */}
+        <p className="abertura-page-label label-mono">
+          <iconify-icon icon="tabler:cash-register" />
+          Abertura de Caixa
+        </p>
 
         {/* Logo mark */}
         <div className="abertura-logo-mark reveal-blur active">
-          <iconify-icon icon="tabler:device-tablet" style={{ color: 'white', fontSize: '2rem' }} />
+          <img src="/caixalivre-icon.svg" alt="CaixaLivre" className="cl-logo-svg" />
         </div>
 
         {/* Título */}
@@ -109,16 +210,6 @@ export default function AberturaCaixaPage() {
                     A estação <strong>{status?.nm_estacao}</strong> não está registrada no sistema.<br />
                     Chame o administrador para cadastrá-la.
                   </span>
-                </div>
-              </div>
-            )}
-
-            {!balancaOk && (
-              <div className="abertura-aviso-balanca reveal d-4 active">
-                <iconify-icon icon="tabler:scale-off" style={{ fontSize: '1.4rem', flexShrink: 0 }} />
-                <div>
-                  <strong>Balança desconectada</strong>
-                  <span>Verifique o cabo e ligue a balança antes de começar o atendimento.</span>
                 </div>
               </div>
             )}

@@ -42,7 +42,7 @@
 .cpf-card {
   background: var(--bg-panel);
   border-radius: 24px;
-  padding: 3rem 3.5rem;
+  padding: 1.75rem 2.5rem;
   width: 100%;
   max-width: 460px;
   box-shadow: 0 24px 80px rgba(0,0,0,0.12), var(--shadow-xl);
@@ -51,7 +51,7 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 1.5rem;
+  gap: 1rem;
   position: relative;
   z-index: 1;
 }
@@ -65,12 +65,12 @@
 
 /* Ícone — layered glow igual ao overlay de instrução */
 .cpf-icon-wrap {
-  width: 104px; height: 104px;
+  width: 76px; height: 76px;
   border-radius: 50%;
   background: rgba(0,139,195,0.08);
-  box-shadow: 0 0 0 18px rgba(0,139,195,0.05), 0 8px 32px rgba(0,139,195,0.16);
+  box-shadow: 0 0 0 12px rgba(0,139,195,0.05), 0 8px 32px rgba(0,139,195,0.16);
   display: flex; align-items: center; justify-content: center;
-  font-size: 3rem; color: var(--fenix-blue);
+  font-size: 2.2rem; color: var(--fenix-blue);
 }
 
 /* Título — arquitetônico, lê-se de longe */
@@ -89,13 +89,14 @@
   font-size: 1rem;
   color: var(--ink-muted);
   text-align: center;
-  line-height: 1.65;
-  max-width: 28ch;
+  line-height: 1.6;
+  white-space: nowrap;
 }
 
-.cpf-desc {
-  font-size: 1rem; color: var(--ink-muted);
-  text-align: center; line-height: 1.6; max-width: 28ch;
+.cpf-desc--erro {
+  color: var(--fenix-red);
+  font-weight: 600;
+  white-space: normal; /* erro pode quebrar linha se necessário */
 }
 
 .cpf-btns { width: 100%; display: flex; flex-direction: column; gap: 0.75rem; }
@@ -126,15 +127,15 @@
   background: var(--bg-subtle);
   border: 2px solid rgba(0,139,195,0.15);
   border-radius: var(--radius-md);
-  padding: 1.1rem 1.5rem;
-  font-family: 'JetBrains Mono', monospace;
-  font-size: clamp(1.1rem, 3.5vw, 1.6rem);
+  padding: 0.75rem 1.25rem;
+  font-family: 'Montserrat', sans-serif;
+  font-size: clamp(1rem, 3.5vw, 1.4rem);
   font-weight: 600;
   letter-spacing: 0.08em;
   color: var(--ink-primary);
   text-align: center;
   white-space: nowrap;
-  min-height: 72px;
+  min-height: 58px;
   display: flex; align-items: center; justify-content: center;
   transition: border-color 0.25s, box-shadow 0.25s, background 0.25s;
 }
@@ -146,6 +147,10 @@
 .cpf-display--valido {
   border-color: #22c55e;
   box-shadow: 0 0 0 4px rgba(34,197,94,0.12);
+}
+.cpf-display--invalido {
+  border-color: var(--fenix-red);
+  box-shadow: 0 0 0 4px rgba(229,57,53,0.12);
 }
 
 /* Wrapper display + ícone de validação */
@@ -164,12 +169,31 @@
   flex-shrink: 0;
   animation: cpf-check-pop 0.30s cubic-bezier(0.16,1,0.3,1) both;
 }
+.cpf-x-icon {
+  color: var(--fenix-red);
+}
+/* Erro exibido logo abaixo do display (destaque maior) */
+.cpf-erro--display {
+  margin-top: -0.25rem;
+  font-size: 1.05rem;
+  font-weight: 600;
+}
 @keyframes cpf-check-pop {
   from { opacity: 0; transform: scale(0.5); }
   to   { opacity: 1; transform: scale(1); }
 }
 
-/* Numpad — herda o estilo Apple definido em AutorizacaoPage.css */
+/* Numpad — sobrescreve tamanho das teclas para caber na tela de CPF */
+.cpf-card .numpad-grid {
+  max-width: 280px;
+  gap: 0.5rem;
+}
+.cpf-card .numpad-key {
+  aspect-ratio: unset;
+  height: 60px;
+  font-size: 1.5rem;
+  border-radius: 12px;
+}
 
 .cpf-erro {
   width: 100%;

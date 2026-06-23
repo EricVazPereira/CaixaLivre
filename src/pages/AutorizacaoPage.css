@@ -32,7 +32,7 @@
 .autorizacao-card {
   background: var(--bg-panel);
   border-radius: var(--radius-lg);
-  padding: 2.75rem 3.25rem;
+  padding: 1.75rem 3.25rem;
   width: 100%;
   max-width: 440px;
   box-shadow: var(--shadow-xl);
@@ -40,17 +40,17 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 1.25rem;
+  gap: 1rem;
   position: relative;
   z-index: 1;
 }
 
 .autorizacao-icon-wrap {
-  width: 72px; height: 72px;
+  width: 56px; height: 56px;
   border-radius: 50%;
   background: rgba(200,113,11,0.10);
   display: flex; align-items: center; justify-content: center;
-  font-size: 2.2rem; color: var(--fenix-orange);
+  font-size: 1.8rem; color: var(--fenix-orange);
 }
 
 .autorizacao-title {
@@ -89,6 +89,11 @@
   box-shadow: 0 0 0 3px rgba(200,113,11,0.12);
 }
 
+@keyframes campo-valor-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: inherit; transform: translateY(0); }
+}
+
 /* Texto dentro do campo: placeholder ou valor digitado */
 .autorizacao-campo-valor {
   font-family: 'Montserrat', sans-serif;
@@ -98,9 +103,10 @@
   opacity: 0.35;
   text-align: center;
   letter-spacing: 0.03em;
-  transition: all 0.15s;
+  transition: color 0.2s, opacity 0.2s, font-weight 0.15s, letter-spacing 0.15s;
   pointer-events: none;
   user-select: none;
+  animation: campo-valor-in 0.22s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 .autorizacao-campo--ativo .autorizacao-campo-valor {
   color: var(--fenix-orange);
@@ -123,19 +129,19 @@
 .numpad-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 0.75rem;
+  gap: 0.45rem;
   width: 100%;
-  max-width: 300px;
+  max-width: 280px;
   margin: 0 auto;
 }
 
 .numpad-key {
-  aspect-ratio: 1;
-  border-radius: 16px;
+  height: 64px;
+  border-radius: 14px;
   border: none;
   background: var(--bg-subtle);
   font-family: 'Montserrat', sans-serif;
-  font-size: 1.75rem;
+  font-size: 1.5rem;
   font-weight: 400;
   color: var(--ink-primary);
   cursor: pointer;
@@ -166,6 +172,8 @@
   border-radius: var(--radius-md);
   padding: 0.75rem 1rem;
   font-size: 1rem; font-weight: 500; color: var(--fenix-red);
+  white-space: nowrap;
+  overflow: hidden;
 }
 
 .autorizacao-btns { width: 100%; display: flex; gap: 0.75rem; }

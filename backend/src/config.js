@@ -93,8 +93,16 @@ const SITEF_DIR_REQ  = (cfgSiTef['DirReq']  || 'C:\\cliente\\Req').trim()
 const SITEF_DIR_RESP = (cfgSiTef['DirResp'] || 'C:\\cliente\\Resp').trim()
 console.log(`[config] SiTef → ${SITEF_HABILITADO ? 'HABILITADO' : 'desabilitado'} | Req: ${SITEF_DIR_REQ} | Resp: ${SITEF_DIR_RESP}`)
 
+// ── Seção [Cancelamento] ──────────────────────────────────────────────────────
+// CancelamentoLiberado=Sim → cancela sem pedir usuário/senha (Honest Pay, pequenos negócios)
+// CancelamentoLiberado=Nao → exige autorização de gerente (padrão)
+const cfgCancel = lerSecaoIni(INI_PATH, 'Cancelamento')
+const _cancelStr = (cfgCancel['CancelamentoLiberado'] || 'nao').trim().toLowerCase()
+const CANCELAMENTO_LIBERADO = _cancelStr === 'sim' || _cancelStr === 'yes' || _cancelStr === '1' || _cancelStr === 'true'
+console.log(`[config] Cancelamento liberado → ${CANCELAMENTO_LIBERADO ? 'SIM (sem senha)' : 'Não (requer autorização)'}`)
+
 // ── Servidor central (porta fixa) ─────────────────────────────────────────────
 const SERVIDOR_PORTA = 3001
 
 // ── Exportações ───────────────────────────────────────────────────────────────
-module.exports = { ERP_HOST, ERP_PORT, ERP_HTTPS, API_ENDERECO, ERP_AUTH, AGENTE_PORTA, SERVIDOR_PORTA, NM_ESTACAO, NFCE_HABILITADO, SITEF_HABILITADO, SITEF_DIR_REQ, SITEF_DIR_RESP, IMPRESSORA_NOME }
+module.exports = { ERP_HOST, ERP_PORT, ERP_HTTPS, API_ENDERECO, ERP_AUTH, AGENTE_PORTA, SERVIDOR_PORTA, NM_ESTACAO, NFCE_HABILITADO, SITEF_HABILITADO, SITEF_DIR_REQ, SITEF_DIR_RESP, IMPRESSORA_NOME, CANCELAMENTO_LIBERADO }

@@ -2,7 +2,6 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useCaixaStore } from '../store/caixaStore'
 import { fecharCaixa } from '../services/api'
-import IconCaixaRegistradora from '../components/IconCaixaRegistradora'
 import './FechamentoCaixaPage.css'
 
 export default function FechamentoCaixaPage() {
@@ -15,7 +14,6 @@ export default function FechamentoCaixaPage() {
 
   const [fechando, setFechando]   = useState(false)
   const [sucesso, setSucesso]     = useState(false)
-  const [mensagem, setMensagem]   = useState('')
   const [erro, setErro]           = useState('')
 
   async function handleFechar(e) {
@@ -23,8 +21,7 @@ export default function FechamentoCaixaPage() {
     setFechando(true)
     setErro('')
     try {
-      const data = await fecharCaixa()
-      setMensagem(data.mensagem || 'Caixa fechado com sucesso!')
+      await fecharCaixa()
       setSucesso(true)
       setTimeout(() => { fecharCaixaStore(); navigate('/') }, 3000)
     } catch (err) {
@@ -44,7 +41,6 @@ export default function FechamentoCaixaPage() {
           </div>
           <h2 className="fechamento-sucesso-titulo reveal d-1 active">Caixa fechado!</h2>
           {apelido && <p className="reveal d-2 active" style={{ color: 'var(--ink-muted)', fontSize: '1rem' }}>Turno de <strong>{apelido}</strong> encerrado.</p>}
-          {mensagem && <p className="fechamento-sucesso-msg reveal d-3 active">{mensagem}</p>}
         </div>
       </div>
     )
@@ -57,8 +53,14 @@ export default function FechamentoCaixaPage() {
 
       <div className="fechamento-card reveal-blur active">
 
+        {/* Label de contexto */}
+        <p className="fechamento-page-label label-mono">
+          <iconify-icon icon="tabler:cash-register" />
+          Fechamento de Caixa
+        </p>
+
         <div className="fechamento-icon-wrap reveal d-1 active">
-          <IconCaixaRegistradora size="3rem" />
+          <img src="/caixalivre-icon.svg" alt="CaixaLivre" className="fechamento-logo-svg" />
         </div>
 
         <h1 className="fechamento-title reveal d-2 active">Fechar o caixa?</h1>
@@ -81,7 +83,7 @@ export default function FechamentoCaixaPage() {
             onClick={handleFechar}
             disabled={fechando}
           >
-            <IconCaixaRegistradora size="1.6rem" />
+              <iconify-icon icon="tabler:cash-register" style={{ fontSize: '1.6rem' }} />
             {fechando ? 'Fechando…' : 'Fechar Caixa'}
           </button>
 

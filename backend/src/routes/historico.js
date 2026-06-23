@@ -118,11 +118,12 @@ router.post('/fechar-comanda', async (req, res) => {
 router.post('/fechar-erp', async (req, res) => {
   const { cod_executor = '0' } = req.body
 
-  // O DataSnap do Fênix pode lançar "A component named OPERADORA already exists" quando
-  // a instância do servidor reutiliza o contexto da chamada anterior (FechamentoComanda).
-  // Nesses casos aguardamos 2s e tentamos novamente — na segunda tentativa o componente
-  // já foi liberado pelo garbage collector do Delphi.
-  const ALREADY_EXISTS_RE = /component named .+ already exists/i
+  // O DataSnap do Fênix pode lançar erros transientes relacionados ao ciclo de vida do
+  // contexto Delphi. Nesses casos aguardamos 2s e tentamos novamente:
+  //   "A component named OPERADORA already exists" — componente ainda não liberado pelo GC
+  //   "CachedUpdates not enabled"                  — dataset em estado inconsistente, se resolve sozinho
+  const ALREADY_EXISTS_RE  = /component named .+ already exists/i
+  const CACHED_UPDATES_RE  = /CachedUpdates not enabled/i
 
   async function tentarFechar() {
     const erpResult = await fecharCaixaERP(cod_executor)
@@ -139,6 +140,10 @@ router.post('/fechar-erp', async (req, res) => {
     } catch (e) {
       if (ALREADY_EXISTS_RE.test(e.message)) {
         console.warn('[fechar-erp] DataSnap retornou "already exists" — aguardando 2s e tentando novamente...')
+        await new Promise(r => setTimeout(r, 2000))
+        erpResult = await tentarFechar()   // lança se falhar de novo
+      } else if (CACHED_UPDATES_RE.test(e.message)) {
+        console.warn('[fechar-erp] DataSnap retornou "CachedUpdates not enabled" — aguardando 2s e tentando novamente...')
         await new Promise(r => setTimeout(r, 2000))
         erpResult = await tentarFechar()   // lança se falhar de novo
       } else {

@@ -35,7 +35,7 @@
 .abertura-card {
   background: var(--bg-panel);
   border-radius: var(--radius-lg);
-  padding: 3.5rem 4rem;
+  padding: 2.5rem 4rem;
   width: 100%;
   max-width: 560px;
   box-shadow: var(--shadow-xl);
@@ -43,20 +43,18 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 1.75rem;
+  gap: 1.5rem;
   position: relative;
   z-index: 1;
 }
 
 .abertura-logo-mark {
-  width: 64px; height: 64px;
-  background: linear-gradient(135deg, var(--fenix-blue) 0%, var(--fenix-green) 100%);
-  border-radius: var(--radius-md);
+  width: 260px; height: 260px;
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: var(--shadow-md);
-  font-size: 2rem;
+  filter: drop-shadow(0 12px 32px rgba(0,139,195,0.45));
 }
 
 .abertura-title {
@@ -78,10 +76,10 @@
   border: 1px solid rgba(0,139,195,0.2);
   border-radius: var(--radius-pill);
   padding: 0.4rem 1rem;
-  font-family: 'JetBrains Mono', monospace;
+  font-family: 'Montserrat', sans-serif;
   font-size: 1rem;
   font-weight: 600;
-  text-transform: uppercase;
+
   letter-spacing: 0.2em;
   color: var(--fenix-blue);
 }
@@ -92,10 +90,10 @@
   gap: 0.6rem;
   padding: 0.75rem 1.5rem;
   border-radius: var(--radius-pill);
-  font-family: 'JetBrains Mono', monospace;
+  font-family: 'Montserrat', sans-serif;
   font-size: 1rem;
   font-weight: 600;
-  text-transform: uppercase;
+
   letter-spacing: 0.15em;
 }
 .abertura-status--aberto {
@@ -158,6 +156,119 @@
   align-items: flex-start;
   gap: 0.5rem;
   line-height: 1.5;
+}
+
+/* ── Label de contexto da tela ── */
+.abertura-page-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-disabled);
+  white-space: nowrap;
+}
+.abertura-page-label iconify-icon {
+  font-size: 1.15rem;
+}
+
+/* ── Gatilho invisível + painel admin ── */
+.abertura-admin-trigger {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 80px;
+  height: 80px;
+  z-index: 50;
+  cursor: default;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+@keyframes abertura-admin-panel-in {
+  from { opacity: 0; transform: translateY(10px) scale(0.96); }
+  to   { opacity: 1; transform: translateY(0)    scale(1); }
+}
+
+.abertura-admin-panel {
+  position: absolute;
+  bottom: 1.75rem;
+  right: 1.75rem;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.4rem;
+  z-index: 10;
+  animation: abertura-admin-panel-in 0.28s cubic-bezier(0.16,1,0.3,1) both;
+}
+
+.abertura-admin-hint {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.6);
+  text-align: right;
+  margin-bottom: 0.1rem;
+}
+
+.abertura-admin-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.65rem 1.1rem;
+  background: rgba(10,20,30,0.55);
+  border: 1px solid rgba(0,139,195,0.22);
+  border-radius: var(--radius-md);
+  color: white;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  white-space: nowrap;
+}
+.abertura-admin-btn iconify-icon { font-size: 1.1rem; }
+.abertura-admin-btn:hover {
+  background: rgba(0,139,195,0.20);
+  color: white;
+  border-color: rgba(0,139,195,0.40);
+}
+
+/* ── Tela de erro de balança ── */
+.abertura-balanca-icone {
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  background: rgba(229, 57, 53, 0.10);
+  border: 2px solid rgba(229, 57, 53, 0.28);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--fenix-red);
+  flex-shrink: 0;
+}
+
+.abertura-balanca-titulo {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 1.45rem;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  color: var(--ink-primary);
+  text-align: center;
+  line-height: 1.25;
+}
+
+.abertura-balanca-sub {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--ink-muted);
+  text-align: center;
+  margin-top: -0.5rem;
 }
 
 .abertura-aviso-balanca {

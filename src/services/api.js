@@ -317,6 +317,72 @@ export async function realizarPagamentoCartao({ idControle, docFiscal, valor, pa
   return data
 }
 
+// ── Balança do totem (segunda balança, pesagem de produtos avulsos) ──────────
+
+/** Lê o peso atual da balança do totem (resposta imediata, sem espera de estabilidade) */
+export async function lerPesoTotem() {
+  try {
+    const res  = await fetch(`${BASE}/balanca-totem/peso`, { signal: AbortSignal.timeout(4000) })
+    const data = await res.json().catch(() => ({}))
+    if (data.desabilitada) return { ok: true, desabilitada: true, peso_gramas: 0 }
+    return { ok: data.ok === true, peso_gramas: data.peso_gramas ?? 0, erro: data.erro }
+  } catch {
+    return { ok: false, erro: 'Balança do totem não respondeu' }
+  }
+}
+
+/** Lê o peso estável da balança do totem (aguarda estabilização) */
+export async function lerPesoEstavelTotem(timeoutMs = 6000) {
+  try {
+    const res  = await fetch(
+      `${BASE}/balanca-totem/peso-estavel?timeout=${timeoutMs}&estabilidade=1200`,
+      { signal: AbortSignal.timeout(timeoutMs + 3000) }
+    )
+    const data = await res.json().catch(() => ({}))
+    if (data.desabilitada) return { ok: true, desabilitada: true, peso_gramas: 0 }
+    return { ok: data.ok === true, peso_gramas: data.peso_gramas ?? 0 }
+  } catch {
+    return { ok: false, peso_gramas: 0 }
+  }
+}
+
+/** Retorna configuração da balança do totem */
+export async function buscarConfiguracaoBalancaTotem() {
+  try {
+    const res  = await fetch(`${BASE}/balanca-totem/config`)
+    const data = await res.json().catch(() => ({}))
+    return { habilitada: data.habilitada ?? false, pronto: data.pronto ?? false }
+  } catch {
+    return { habilitada: false, pronto: false }
+  }
+}
+
+// ── Famílias e produtos para pesagem ─────────────────────────────────────────
+
+/** Lista famílias/categorias de produtos pesáveis */
+export async function buscarFamilias() {
+  const res  = await fetch(`${BASE}/pesagem/familias`)
+  const data = await res.json().catch(() => ({}))
+  if (!res.ok) throw new Error(data.erro || 'Erro ao buscar famílias')
+  return data.familias ?? []
+}
+
+/** Busca produtos pesáveis por nome (busca textual) */
+export async function buscarProdutosPesagem(termo) {
+  const res  = await fetch(`${BASE}/pesagem/buscar?q=${encodeURIComponent(termo)}`)
+  const data = await res.json().catch(() => ({}))
+  if (!res.ok) throw new Error(data.erro || 'Erro ao buscar produtos')
+  return data.produtos ?? []
+}
+
+/** Lista produtos de uma família */
+export async function buscarProdutosFamilia(codigoFamilia) {
+  const res  = await fetch(`${BASE}/pesagem/familias/${encodeURIComponent(codigoFamilia)}/produtos`)
+  const data = await res.json().catch(() => ({}))
+  if (!res.ok) throw new Error(data.erro || 'Erro ao buscar produtos da família')
+  return data.produtos ?? []
+}
+
 // Cancelamentos são apenas locais — o carrinho vive no frontend.
 // Não há registro no banco para contas canceladas antes do pagamento.
 export async function registrarCancelamento(_itens) {

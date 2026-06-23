@@ -1,0 +1,64 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="512" y2="512" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#06121F"/>
+      <stop offset="100%" stop-color="#0A2E4E"/>
+    </linearGradient>
+    <!-- Gradient flows left→right on the arcs (blue origin → green outer) -->
+    <linearGradient id="arc-grad" x1="100" y1="0" x2="412" y2="0" gradientUnits="userSpaceOnUse">
+      <stop offset="0%"   stop-color="#008BC3"/>
+      <stop offset="55%"  stop-color="#00AABB"/>
+      <stop offset="100%" stop-color="#00CD2B"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="512" height="512" rx="112" fill="url(#bg)"/>
+
+  <!-- Ambient glow — top center (aligns with check) -->
+  <ellipse cx="256" cy="150" rx="140" ry="110" fill="rgba(0,205,43,0.05)"/>
+  <!-- Ambient glow — bottom (aligns with card) -->
+  <ellipse cx="256" cy="400" rx="170" ry="90"  fill="rgba(0,139,195,0.06)"/>
+
+  <!-- ── NFC arcs bowing upward from top of card (y=340) ── -->
+  <!--
+    Arc formula: M {256-r} 340 A r r 0 0 1 {256+r} 340
+    sweep=1 (clockwise from left to right) bows UPWARD through (256, 340-r)
+  -->
+
+  <!-- Arc 3 (outermost) — most transparent -->
+  <path d="M 112 340 A 144 144 0 0 1 400 340"
+    stroke="url(#arc-grad)" stroke-width="18" stroke-linecap="round" fill="none" opacity="0.30"/>
+
+  <!-- Arc 2 (mid) -->
+  <path d="M 154 340 A 102 102 0 0 1 358 340"
+    stroke="url(#arc-grad)" stroke-width="20" stroke-linecap="round" fill="none" opacity="0.62"/>
+
+  <!-- Arc 1 (innermost) — most opaque -->
+  <path d="M 196 340 A 60 60 0 0 1 316 340"
+    stroke="url(#arc-grad)" stroke-width="22" stroke-linecap="round" fill="none" opacity="1.0"/>
+
+  <!-- ── Payment confirmed: green check circle at top ── -->
+  <!-- Outer glow ring -->
+  <circle cx="256" cy="158" r="58" fill="rgba(0,205,43,0.12)"/>
+  <!-- Circle fill -->
+  <circle cx="256" cy="158" r="46" fill="#00CD2B"/>
+  <!-- Checkmark inside circle -->
+  <path d="M 232 158 L 248 176 L 282 136"
+    stroke="white" stroke-width="14" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+
+  <!-- ── Payment card ── -->
+  <!-- Card body -->
+  <rect x="72" y="340" width="368" height="118" rx="22"
+    stroke="white" stroke-width="20" fill="rgba(14,44,72,0.40)"/>
+  <!-- Horizontal stripe accent -->
+  <rect x="72" y="380" width="368" height="26" fill="rgba(255,255,255,0.06)"/>
+  <!-- Chip -->
+  <rect x="112" y="362" width="48" height="38" rx="8"
+    stroke="rgba(255,255,255,0.50)" stroke-width="10" fill="rgba(255,255,255,0.06)"/>
+  <!-- Chip internal lines (horizontal) -->
+  <line x1="112" y1="378" x2="160" y2="378" stroke="rgba(255,255,255,0.30)" stroke-width="4"/>
+  <!-- Contactless dots on card (right side) -->
+  <circle cx="390" cy="381" r="5" fill="rgba(255,255,255,0.22)"/>
+  <circle cx="390" cy="381" r="12" stroke="rgba(255,255,255,0.12)" stroke-width="4" fill="none"/>
+</svg>

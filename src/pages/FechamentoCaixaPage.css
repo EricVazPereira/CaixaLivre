@@ -35,7 +35,7 @@
 .fechamento-card {
   background: var(--bg-panel);
   border-radius: var(--radius-lg);
-  padding: 3.5rem 4rem;
+  padding: 2rem 3rem;
   width: 100%;
   max-width: 520px;
   box-shadow: var(--shadow-xl);
@@ -43,20 +43,24 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 1.75rem;
+  gap: 1.1rem;
   position: relative;
   z-index: 1;
 }
 
 .fechamento-icon-wrap {
-  width: 64px; height: 64px;
-  border-radius: 50%;
-  background: rgba(61,61,61,0.08);
+  width: 180px; height: 180px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 2rem;
-  color: var(--fenix-dark);
+  filter: drop-shadow(0 12px 32px rgba(0,139,195,0.45));
+}
+
+.fechamento-logo-svg {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
 }
 
 .fechamento-title {
@@ -99,16 +103,32 @@
   line-height: 1.5;
 }
 
+/* ── Label de contexto da tela ── */
+.fechamento-page-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-disabled);
+  white-space: nowrap;
+}
+.fechamento-page-label iconify-icon {
+  font-size: 1.15rem;
+}
+
 /* Info de estação e data de abertura */
 .fechamento-info-estacao {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 0.3rem;
-  margin-top: 0.5rem;
+  margin-top: 0;
   font-size: 1rem;
   color: var(--ink-disabled);
-  font-family: 'JetBrains Mono', monospace;
+  font-family: 'Montserrat', sans-serif;
   letter-spacing: 0.04em;
 }
 .fechamento-info-estacao span {
@@ -151,10 +171,10 @@
   color: var(--ink-primary);
 }
 .fechamento-sucesso-msg {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: 'Montserrat', sans-serif;
   font-size: 1rem;
   font-weight: 500;
-  text-transform: uppercase;
+
   letter-spacing: 0.15em;
   color: var(--ink-muted);
 }

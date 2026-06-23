@@ -7,12 +7,23 @@
  */
 
 const { execSync } = require('child_process')
+const { rmSync, existsSync } = require('fs')
 const path = require('path')
 
 // Desabilita assinatura de código — não há certificado neste projeto
 process.env.CSC_IDENTITY_AUTO_DISCOVERY = 'false'
 
 const root = path.join(__dirname, '..')
+
+// 0. Limpa builds anteriores para garantir substituição completa dos arquivos
+console.log('\n🧹 Limpando builds anteriores...\n')
+for (const dir of ['dist', 'release']) {
+  const full = path.join(root, dir)
+  if (existsSync(full)) {
+    rmSync(full, { recursive: true, force: true })
+    console.log(`   removido: ${dir}/`)
+  }
+}
 
 // 1. Compila o React
 console.log('\n📦 Compilando frontend...\n')

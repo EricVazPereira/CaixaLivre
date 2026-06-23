@@ -54,7 +54,6 @@ export default function CpfCupomPage() {
   const { setCpf } = useCarrinhoStore()
   const [modo, setModo] = useState('escolha') // 'escolha' | 'digitar'
   const [digits, setDigits] = useState('')
-  const [erro, setErro] = useState('')
 
   function handleSemCpf() {
     setCpf('')
@@ -62,17 +61,11 @@ export default function CpfCupomPage() {
   }
 
   function handleConfirmar() {
-    const valido = digits.length === 11 ? validarCpf(digits) : validarCnpj(digits)
-    if (!valido) {
-      setErro(`Esse ${tipoDocumento(digits)} não é válido. Confira e tente de novo.`)
-      return
-    }
     setCpf(digits)
     navigate('/operacao')
   }
 
   function pressKey(key) {
-    setErro('')
     if (key === '⌫') {
       setDigits(d => d.slice(0, -1))
     } else if (digits.length < 14) {
@@ -82,8 +75,10 @@ export default function CpfCupomPage() {
 
   const KEYS = ['7','8','9','4','5','6','1','2','3','','0','⌫']
 
-  const isValido = (digits.length === 11 && validarCpf(digits)) || (digits.length === 14 && validarCnpj(digits))
-  const podeConfirmar = isValido
+  const comprimentoCompleto = digits.length === 11 || digits.length === 14
+  const isValido  = (digits.length === 11 && validarCpf(digits)) || (digits.length === 14 && validarCnpj(digits))
+  const invalido  = comprimentoCompleto && !isValido   // detectado automaticamente
+  const podeConfirmar = isValido                        // botão só ativa se realmente válido
   const tipo = tipoDocumento(digits)
 
   if (modo === 'digitar') {
@@ -96,23 +91,25 @@ export default function CpfCupomPage() {
             <iconify-icon icon="tabler:id" />
           </div>
           <h1 className="cpf-title">Digite seu CPF ou CNPJ</h1>
-          <p className="cpf-desc">
-            {digits.length < 11
-              ? 'CPF tem 11 dígitos · CNPJ tem 14'
-              : digits.length === 11
-                ? 'CPF completo — é CNPJ? Continue digitando'
-                : `Faltam ${14 - digits.length}`}
+          <p className={`cpf-desc${invalido ? ' cpf-desc--erro' : ''}`}>
+            {invalido
+              ? 'CPF errado. Confira e tente de novo.'
+              : digits.length < 11
+                ? 'CPF tem 11 dígitos · CNPJ tem 14'
+                : digits.length === 11
+                  ? 'CPF ok — é CNPJ? Continue digitando'
+                  : `Faltam ${14 - digits.length} dígitos`}
           </p>
 
           <div className="cpf-display-wrapper">
-            <div className={`cpf-display-formatted ${digits.length > 0 ? 'cpf-display--active' : ''} ${isValido ? 'cpf-display--valido' : ''}`}>
+            <div className={`cpf-display-formatted ${digits.length > 0 ? 'cpf-display--active' : ''} ${isValido ? 'cpf-display--valido' : ''} ${invalido ? 'cpf-display--invalido' : ''}`}>
               {formatarDocumento(digits)}
             </div>
-            {isValido && (
-              <iconify-icon
-                icon="tabler:circle-check-filled"
-                class="cpf-check-icon"
-              />
+            {isValido && !invalido && (
+              <iconify-icon icon="tabler:circle-check-filled" class="cpf-check-icon" />
+            )}
+            {invalido && (
+              <iconify-icon icon="tabler:circle-x-filled" class="cpf-check-icon cpf-x-icon" />
             )}
           </div>
 
@@ -130,17 +127,10 @@ export default function CpfCupomPage() {
             ))}
           </div>
 
-          {erro && (
-            <div className="cpf-erro">
-              <iconify-icon icon="tabler:alert-triangle" style={{ fontSize: '1rem', flexShrink: 0 }} />
-              {erro}
-            </div>
-          )}
-
           <div className="cpf-btns-bottom">
             <button
               className="btn-fenix btn-dark"
-              onClick={() => { setDigits(''); setErro(''); setModo('escolha') }}
+              onClick={() => { setDigits(''); setModo('escolha') }}
               style={{ height: '64px', fontSize: '1rem', flex: 1 }}
             >
               <iconify-icon icon="tabler:arrow-left" />

@@ -47,7 +47,7 @@ function lerSecaoIni(caminhoArquivo, secao) {
 // Em modo Electron, main.cjs define CAIXALIVRE_INI com o caminho correto
 // Em modo standalone (node src/agente.js), usa caminho relativo à raiz do projeto
 const INI_PATH = process.env.CAIXALIVRE_INI || path.resolve(__dirname, '../../../Network.ini')
-const cfg      = lerSecaoIni(INI_PATH, 'Balanca')
+const cfg      = lerSecaoIni(INI_PATH, 'BalancaConferencia')
 
 const HABILITADA = (cfg['Habilitar'] || 'SIM').trim().toUpperCase() === 'SIM'
 const PORTA      = cfg['Porta']    || 'COM7'
@@ -56,8 +56,8 @@ const DATA       = parseInt(cfg['DataBits'],  10) || 8
 const PARITY     = (cfg['Parity']  || 'none').toLowerCase()
 const STOP       = parseFloat(cfg['StopBits']) || 1
 
-console.log(`[balanca] Habilitar=${HABILITADA ? 'SIM' : 'NÃO'}`)
-if (HABILITADA) console.log(`[balanca] ${PORTA} | ${BAUD} bps | ${DATA}${PARITY[0].toUpperCase()}${STOP}`)
+console.log(`[balanca-conferencia] Habilitar=${HABILITADA ? 'SIM' : 'NÃO'}`)
+if (HABILITADA) console.log(`[balanca-conferencia] ${PORTA} | ${BAUD} bps | ${DATA}${PARITY[0].toUpperCase()}${STOP}`)
 
 const SERIAL_OPTS = { path: PORTA, baudRate: BAUD, dataBits: DATA, parity: PARITY, stopBits: STOP, autoOpen: false }
 

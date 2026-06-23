@@ -31,11 +31,10 @@
 .pagamento-header-logo span { color: var(--fenix-blue); }
 
 .pagamento-header-sub {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: 'Montserrat', sans-serif;
   font-size: 1rem;
   font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.2em;
+  letter-spacing: 0.03em;
   color: var(--ink-muted);
   margin-left: auto;
 }
@@ -59,12 +58,12 @@
 /* Header row — igual ao lista-header-row da OperacaoPage */
 .resumo-header-row {
   display: grid;
-  grid-template-columns: 1fr 55px 75px 85px;
+  grid-template-columns: 32px 1fr 82px 95px 85px;
   gap: 0.5rem;
   padding: 0.75rem 1.5rem;
   background: var(--fenix-blue);
   border-bottom: 1px solid rgba(0,139,195,0.12);
-  font-family: 'JetBrains Mono', monospace;
+  font-family: 'Montserrat', sans-serif;
   font-size: 1rem;
   font-weight: 600;
   text-transform: uppercase;
@@ -89,7 +88,7 @@
 }
 .resumo-item {
   display: grid;
-  grid-template-columns: 1fr 55px 75px 85px;
+  grid-template-columns: 32px 1fr 82px 95px 85px;
   gap: 0.5rem;
   padding: 1rem;
   background: var(--bg-panel);
@@ -100,6 +99,28 @@
   animation: resumo-item-enter 0.38s cubic-bezier(0.16,1,0.3,1) both;
 }
 
+/* Cancelled item — identical to .item-cancelado in OperacaoPage */
+.resumo-item--cancelado {
+  background: rgba(229,57,53,0.10);
+  border-color: rgba(229,57,53,0.30);
+}
+.resumo-item--cancelado .resumo-item-nome,
+.resumo-item--cancelado .resumo-item-qtd,
+.resumo-item--cancelado .resumo-item-preco,
+.resumo-item--cancelado .resumo-item-valor,
+.resumo-item--cancelado .resumo-item-ordinal {
+  color: var(--fenix-red, #e53935);
+  opacity: 0.75;
+}
+
+.resumo-item-ordinal {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--ink-muted);
+  opacity: 0.5;
+  text-align: center;
+}
 .resumo-item-nome {
   font-size: 1rem;
   font-weight: 700;
@@ -107,23 +128,24 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  min-width: 0;
 }
 .resumo-item-qtd {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: 'Montserrat', sans-serif;
   font-size: 1rem;
   font-weight: 500;
   color: var(--ink-secondary);
   text-align: right;
 }
 .resumo-item-preco {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: 'Montserrat', sans-serif;
   font-size: 1rem;
   font-weight: 500;
   color: var(--ink-secondary);
   text-align: right;
 }
 .resumo-item-valor {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: 'Montserrat', sans-serif;
   font-size: 1rem;
   font-weight: 600;
   color: var(--fenix-blue);
@@ -141,11 +163,10 @@
   flex-shrink: 0;
 }
 .resumo-total-label {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: 'Montserrat', sans-serif;
   font-size: 1rem;
   font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.22em;
+  letter-spacing: 0.03em;
   color: rgba(255,255,255,0.65);
 }
 /* Valor — contraste dramático, lê-se de longe */
@@ -169,11 +190,10 @@
 }
 
 .forma-title {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: 'Montserrat', sans-serif;
   font-size: 1rem;
   font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.2em;
+  letter-spacing: 0.03em;
   color: var(--ink-muted);
 }
 
@@ -242,11 +262,10 @@
   text-align: left;
 }
 .forma-btn-sub {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: 'Montserrat', sans-serif;
   font-size: 1rem;
   font-weight: 500;
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.02em;
   color: var(--ink-muted);
   text-align: left;
 }

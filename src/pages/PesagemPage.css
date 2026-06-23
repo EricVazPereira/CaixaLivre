@@ -1,0 +1,632 @@
+/* ═══════════════════════ PesagemPage ═══════════════════════ */
+.pesagem-root {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  z-index: 100;
+  padding: 2rem;
+}
+
+
+/* ── Botão voltar (dentro da linha de categorias) ── */
+.pesagem-btn-voltar {
+  width: 52px; height: 52px;
+  border-radius: 50%;
+  border: none;
+  background: transparent;
+  color: var(--ink-muted);
+  font-size: 1.75rem;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: background 0.2s, color 0.2s;
+  flex-shrink: 0;
+}
+.pesagem-btn-voltar:hover {
+  background: var(--bg-subtle);
+  color: var(--ink-primary);
+}
+/* Variante standalone (etapa balança — fora do flex de categorias) */
+.pesagem-btn-voltar--standalone {
+  align-self: flex-start;
+}
+
+/* ── Card principal ── */
+.pesagem-card {
+  background: var(--bg-panel);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-xl);
+  border: 1px solid rgba(0,139,195,0.10);
+  width: 100%;
+  max-width: 680px;
+  padding: 1.25rem 1.75rem 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  min-height: 360px;
+  overflow: hidden;
+}
+
+/* ── Linha: botão voltar + tabs de categoria ── */
+.pesagem-categorias {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 0.5rem;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.pesagem-categorias::-webkit-scrollbar { display: none; }
+
+.pesagem-cat-tab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.65rem 1rem;
+  border-radius: var(--radius-md);
+  border: 2px solid rgba(0,139,195,0.18);
+  background: var(--bg-panel);
+  color: var(--ink-primary);
+  font-family: 'Montserrat', sans-serif;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+.pesagem-cat-tab iconify-icon {
+  font-size: 1.5rem;
+  color: var(--fenix-blue);
+  transition: color 0.15s;
+}
+.pesagem-cat-tab.ativo {
+  background: var(--fenix-blue);
+  border-color: var(--fenix-blue);
+  color: #fff;
+}
+.pesagem-cat-tab.ativo iconify-icon {
+  color: #fff;
+}
+
+/* ── Barra de busca (entre categorias e produtos) ── */
+.pesagem-barra-busca {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  width: 100%;
+  padding: 0.7rem 1rem;
+  background: var(--bg-subtle);
+  border: 1.5px solid rgba(0,139,195,0.18);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--ink-disabled);
+  transition: border-color 0.15s, background 0.15s;
+  text-align: left;
+  flex-shrink: 0;
+}
+.pesagem-barra-busca iconify-icon { font-size: 1.1rem; color: var(--fenix-blue); }
+.pesagem-barra-busca:hover {
+  border-color: var(--fenix-blue);
+  background: rgba(0,139,195,0.04);
+  color: var(--ink-muted);
+}
+
+/* ── Área de produtos (scroll horizontal) ── */
+.pesagem-produtos-area {
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: thin;
+  /* Mostra peek da próxima coluna */
+  -webkit-mask-image: linear-gradient(to right, black calc(100% - 40px), transparent 100%);
+  mask-image: linear-gradient(to right, black calc(100% - 40px), transparent 100%);
+}
+.pesagem-produtos-area:hover {
+  -webkit-mask-image: none;
+  mask-image: none;
+}
+
+/* ── Grid de produtos: 2 linhas × N colunas, ordem por linha ── */
+.pesagem-produtos-grid {
+  display: grid;
+  grid-template-rows: repeat(2, auto);
+  /* grid-template-columns vem do inline style (calculado pelo nº de produtos) */
+  gap: 0.5rem;
+  padding-bottom: 0.25rem;
+}
+
+
+/* ── Área de conteúdo da etapa ── */
+.pesagem-etapa {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.1rem;
+  width: 100%;
+}
+
+/* ── Ícone central ── */
+.pesagem-icon-wrap {
+  width: 64px; height: 64px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--fenix-blue) 0%, #0099d6 100%);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 2rem;
+  color: #fff;
+  box-shadow: 0 6px 20px rgba(0,139,195,0.35);
+  flex-shrink: 0;
+}
+
+.pesagem-titulo {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 1.4rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: var(--ink-primary);
+  text-align: center;
+  margin: 0;
+}
+
+.pesagem-desc {
+  font-size: 0.95rem;
+  color: var(--ink-muted);
+  text-align: center;
+  margin: 0;
+}
+
+/* ── Display de peso ── */
+.pesagem-display {
+  width: 100%;
+  background: var(--bg-subtle);
+  border: 2px solid rgba(0,139,195,0.2);
+  border-radius: var(--radius-md);
+  padding: 1.25rem 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  transition: border-color 0.25s, background 0.25s;
+  min-height: 80px;
+}
+.pesagem-display--ok {
+  border-color: var(--fenix-blue);
+  background: rgba(0,139,195,0.05);
+}
+
+.pesagem-display-valor {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 2.5rem;
+  font-weight: 700;
+  letter-spacing: -0.04em;
+  color: var(--ink-primary);
+  line-height: 1;
+}
+.pesagem-display--ok .pesagem-display-valor {
+  color: var(--fenix-blue);
+}
+
+.pesagem-display-badge {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--fenix-blue);
+  background: rgba(0,139,195,0.10);
+  padding: 0.3rem 0.65rem;
+  border-radius: 20px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.pesagem-display-badge iconify-icon { font-size: 0.85rem; }
+
+/* ── Botão confirmar peso ── */
+.pesagem-btn-confirmar {
+  width: 100%;
+  height: 60px;
+  font-size: 1.05rem;
+  border-radius: 14px;
+}
+
+/* ── Peso travado (chip no topo das etapas 2 e 3) ── */
+.pesagem-peso-travado {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--fenix-blue);
+  background: rgba(0,139,195,0.10);
+  padding: 0.3rem 0.8rem;
+  border-radius: 20px;
+  border: 1px solid rgba(0,139,195,0.18);
+}
+.pesagem-peso-travado iconify-icon { font-size: 0.85rem; }
+
+/* ── Grid de produtos ── */
+.pesagem-familias-grid {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-start;
+  align-items: stretch;
+  gap: 0.6rem;
+  width: 100%;
+  padding: 0.25rem 0;
+}
+
+.pesagem-familia-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  width: 110px;
+  padding: 0.85rem 0.5rem;
+  background: var(--bg-subtle);
+  border: 2px solid transparent;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s, transform 0.1s;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--ink-primary);
+  text-align: center;
+  line-height: 1.2;
+}
+.pesagem-familia-card iconify-icon {
+  font-size: 1.75rem;
+  color: var(--fenix-blue);
+}
+.pesagem-familia-card span {
+  overflow-wrap: break-word;
+  word-break: break-word;
+  hyphens: auto;
+  width: 100%;
+}
+.pesagem-familia-card:hover {
+  border-color: var(--fenix-blue);
+  background: rgba(0,139,195,0.06);
+  transform: translateY(-2px);
+}
+.pesagem-familia-card:active { transform: scale(0.96); }
+
+/* ── Variante produto: sem ícone, preço fixo no fundo ── */
+.pesagem-familia-card--produto {
+  justify-content: flex-start;
+  width: 100%; /* herda a largura da célula do grid */
+}
+.pesagem-familia-card--produto .pesagem-produto-preco-kg {
+  margin-top: auto;
+}
+
+/* ── Lista de produtos ── */
+.pesagem-produtos-lista {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  max-height: 340px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.pesagem-produto-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.9rem 1rem;
+  background: var(--bg-subtle);
+  border: 2px solid transparent;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.15s, background 0.15s;
+  width: 100%;
+}
+.pesagem-produto-item:hover {
+  border-color: var(--fenix-blue);
+  background: rgba(0,139,195,0.05);
+}
+.pesagem-produto-item:active { transform: scale(0.99); }
+
+.pesagem-produto-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  flex: 1;
+  min-width: 0;
+}
+.pesagem-produto-nome {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--ink-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.pesagem-produto-preco-kg {
+  font-size: 1rem;
+  color: var(--fenix-blue);
+  font-weight: 800;
+  letter-spacing: 0.01em;
+}
+
+.pesagem-produto-total {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: var(--fenix-blue);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* ── Estados de carregamento / erro / vazio ── */
+.pesagem-loading {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--ink-muted);
+  font-size: 0.9rem;
+  padding: 1rem 0;
+}
+.pesagem-loading iconify-icon { font-size: 1.1rem; }
+
+.pesagem-erro {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--fenix-red);
+  font-size: 0.88rem;
+  padding: 0.75rem 1rem;
+  background: rgba(229,57,53,0.07);
+  border-radius: var(--radius-sm);
+  width: 100%;
+}
+
+.pesagem-vazio {
+  color: var(--ink-disabled);
+  font-size: 0.9rem;
+  text-align: center;
+  padding: 1.5rem 0;
+  width: 100%;
+}
+
+/* ── Chip de contexto (família / produto selecionado) ── */
+.pesagem-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  color: var(--fenix-blue);
+  background: rgba(0,139,195,0.10);
+  padding: 0.3rem 0.9rem;
+  border-radius: 20px;
+  border: 1px solid rgba(0,139,195,0.18);
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pesagem-chip iconify-icon { font-size: 0.95rem; flex-shrink: 0; }
+
+/* ── Etapa balança: layout focado e centralizado ── */
+.pesagem-etapa--balanca {
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 1.25rem;
+}
+
+/* ── Ícone da balança na etapa de pesagem ── */
+.pesagem-balanca-icon-wrap {
+  position: relative;
+  width: 130px; height: 130px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--fenix-blue) 0%, #0099d6 100%);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 4rem;
+  color: #fff;
+  box-shadow: 0 8px 28px rgba(0,139,195,0.35);
+  flex-shrink: 0;
+}
+
+/* ── Pulso animado quando há peso detectado ── */
+.pesagem-balanca-pulse {
+  position: absolute;
+  inset: -8px;
+  border-radius: 50%;
+  border: 3px solid rgba(0,139,195,0.45);
+  animation: balanca-pulse 1.2s ease-out infinite;
+  pointer-events: none;
+}
+.pesagem-balanca-pulse::after {
+  content: '';
+  position: absolute;
+  inset: -8px;
+  border-radius: 50%;
+  border: 2px solid rgba(0,139,195,0.25);
+  animation: balanca-pulse 1.2s ease-out 0.35s infinite;
+}
+
+@keyframes balanca-pulse {
+  0%   { transform: scale(1);    opacity: 1; }
+  100% { transform: scale(1.35); opacity: 0; }
+}
+
+/* ── Total calculado dentro do display ── */
+.pesagem-display-total {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 1.3rem;
+  font-weight: 800;
+  color: var(--fenix-blue);
+  white-space: nowrap;
+  flex-shrink: 0;
+  letter-spacing: -0.02em;
+}
+
+/* ══════════════════════════════════════════════════════
+   TELA DE BUSCA COM TECLADO VIRTUAL
+══════════════════════════════════════════════════════ */
+
+/* Card expandido no modo busca (teclado dobrado precisa de mais espaço) */
+.pesagem-card:has(.pesagem-busca-overlay) {
+  max-width: min(940px, calc(100vw - 2rem));
+  min-height: min(680px, 90vh);
+}
+
+.pesagem-busca-overlay {
+  position: absolute;
+  inset: 0;
+  background: var(--bg-panel);
+  border-radius: var(--radius-lg);
+  display: flex;
+  flex-direction: column;
+  z-index: 10;
+  overflow: hidden;
+}
+
+/* ── Header: voltar + barra de busca ── */
+.pesagem-busca-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem 0.75rem 0.5rem;
+  border-bottom: 1px solid rgba(0,139,195,0.10);
+  flex-shrink: 0;
+}
+
+.pesagem-busca-input-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex: 1;
+  background: var(--bg-subtle);
+  border: 1.5px solid var(--fenix-blue);
+  border-radius: var(--radius-md);
+  padding: 0 0.75rem;
+  height: 48px;
+}
+.pesagem-busca-input-wrap iconify-icon {
+  font-size: 1.2rem;
+  color: var(--fenix-blue);
+  flex-shrink: 0;
+}
+
+.pesagem-busca-display {
+  flex: 1;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--ink-primary);
+  letter-spacing: 0.02em;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pesagem-busca-placeholder {
+  color: var(--ink-disabled);
+  font-weight: 500;
+}
+
+.pesagem-busca-limpar {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: var(--ink-disabled);
+  font-size: 1rem;
+  display: flex; align-items: center;
+  padding: 0; flex-shrink: 0;
+}
+.pesagem-busca-limpar:hover { color: var(--fenix-red); }
+
+/* ── Resultados ── */
+.pesagem-busca-resultados {
+  /* mostra 2 fileiras completas + peek da 3ª */
+  min-height: 240px;
+  max-height: 320px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding: 0.75rem 1.25rem 0;
+  scrollbar-width: thin;
+}
+
+/* Grid de busca: flex-wrap, preenche linha por linha da esquerda para a direita */
+.pesagem-busca-grid {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-start;
+  gap: 0.5rem;
+  align-content: flex-start;
+  padding-bottom: 0.75rem;
+}
+.pesagem-busca-grid .pesagem-familia-card--produto {
+  width: 130px;
+}
+
+/* ── Teclado virtual ── */
+.pesagem-teclado {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding: 0.6rem 0.75rem 0.75rem;
+  background: var(--bg-subtle);
+  border-top: 1px solid rgba(0,139,195,0.10);
+  flex-shrink: 0;
+}
+
+.pesagem-teclado-linha {
+  display: flex;
+  justify-content: center;
+  gap: 0.4rem;
+}
+
+.pesagem-teclado-tecla {
+  min-width: 82px;
+  height: 82px;
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(0,139,195,0.15);
+  background: var(--bg-panel);
+  color: var(--ink-primary);
+  font-family: 'Montserrat', sans-serif;
+  font-size: 1.75rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: background 0.1s, transform 0.08s;
+  user-select: none;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.10);
+}
+.pesagem-teclado-tecla:hover  { background: rgba(0,139,195,0.07); }
+.pesagem-teclado-tecla:active { background: rgba(0,139,195,0.15); transform: scale(0.93); }
+
+.pesagem-teclado-tecla--espaco {
+  min-width: 360px;
+  font-size: 1rem;
+  letter-spacing: 0.06em;
+  color: var(--ink-muted);
+}
+
+.pesagem-teclado-tecla--back {
+  background: rgba(229,57,53,0.07);
+  border-color: rgba(229,57,53,0.2);
+  color: var(--fenix-red);
+  font-size: 1.75rem;
+}
+.pesagem-teclado-tecla--back:hover { background: rgba(229,57,53,0.13); }

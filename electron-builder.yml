@@ -1,6 +1,7 @@
-appId: com.caixalivre.app
+appId: br.com.caixalivre
 productName: CaixaLivre
 copyright: Copyright © 2025 CaixaLivre
+icon: build/icon.ico
 
 directories:
   output: release
@@ -57,6 +58,8 @@ win:
   target:
     - target: nsis
       arch: [x64]
+    - target: dir
+      arch: [x64]
 
 compression: maximum
 
@@ -68,6 +71,8 @@ nsis:
   createStartMenuShortcut: true
   shortcutName: CaixaLivre
   deleteAppDataOnUninstall: false
+  installerIcon: build/icon.ico
+  uninstallerIcon: build/icon.ico
 
 afterPack: scripts/after-pack.cjs
 

@@ -11,13 +11,15 @@ export const useCarrinhoStore = create(
   setCpf: (cpf) => set({ cpf }),
 
   /** Cada scan cria uma linha nova — sem agrupamento por código.
-   *  Se produto.id já vier preenchido, usa ele (permite rastrear o item externamente). */
+   *  Se produto.id já vier preenchido, usa ele (permite rastrear o item externamente).
+   *  ordinal = número de ordem de passagem (1, 2, 3…), nunca muda após adição. */
   adicionarItem(produto, quantidade = 1) {
     const qtd = Number(quantidade)
     const novoItem = {
       ...produto,
-      id:         produto.id || crypto.randomUUID(),
-      // Inteiros: garante mínimo 1. Decimais (ex: 0,042 kg): preserva como veio.
+      id:        produto.id || crypto.randomUUID(),
+      ordinal:   get().itens.length + 1,
+      cancelado: false,
       quantidade: Number.isInteger(qtd) ? Math.max(1, qtd) : Math.max(0.001, qtd),
     }
     set(state => ({ itens: [...state.itens, novoItem] }))
@@ -27,12 +29,25 @@ export const useCarrinhoStore = create(
     set({ itemSelecionado: id })
   },
 
-  /** Remove apenas a linha com o id selecionado */
+  /** Marca o item selecionado como cancelado — mantém na lista com estilo vermelho */
   cancelarItemSelecionado() {
     const { itemSelecionado } = get()
     if (!itemSelecionado) return
     set(state => ({
-      itens: state.itens.filter(i => i.id !== itemSelecionado),
+      itens: state.itens.map(i =>
+        i.id === itemSelecionado ? { ...i, cancelado: true } : i
+      ),
+      itemSelecionado: null,
+    }))
+  },
+
+  /** Cancela uma lista de itens de uma vez (batch) */
+  cancelarItens(ids) {
+    const idSet = new Set(ids)
+    set(state => ({
+      itens: state.itens.map(i =>
+        idSet.has(i.id) ? { ...i, cancelado: true } : i
+      ),
       itemSelecionado: null,
     }))
   },
@@ -46,12 +61,24 @@ export const useCarrinhoStore = create(
     }))
   },
 
+  /** Atualiza o contador do ERP (ordem_item) retornado pelo GravaItens */
+  atualizarContadorERP(id, contadorERP) {
+    set(state => ({
+      itens: state.itens.map(it =>
+        it.id === id ? { ...it, contador: contadorERP } : it
+      ),
+    }))
+  },
+
   cancelarConta() {
     set({ itens: [], itemSelecionado: null, cpf: '' })
   },
 
+  /** Subtotal exclui itens cancelados */
   subtotal() {
-    return get().itens.reduce((acc, i) => acc + i.valor_unitario * i.quantidade, 0)
+    return get().itens
+      .filter(i => !i.cancelado)
+      .reduce((acc, i) => acc + i.valor_unitario * i.quantidade, 0)
   },
   }),
   {

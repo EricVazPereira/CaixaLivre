@@ -9,15 +9,14 @@ import AutorizacaoPage     from './pages/AutorizacaoPage'
 import PagamentoPage       from './pages/PagamentoPage'
 import ImpressaoCupomPage  from './pages/ImpressaoCupomPage'
 import ConsultaVendasPage  from './pages/ConsultaVendasPage'
-import FechamentoCaixaPage      from './pages/FechamentoCaixaPage'
-import ConfirmacaoGerentePage   from './pages/ConfirmacaoGerentePage'
+import FechamentoCaixaPage from './pages/FechamentoCaixaPage'
+import PesagemPage         from './pages/PesagemPage'
 
 function Protegida({ children }) {
   const { caixaAberto } = useCaixaStore()
   return caixaAberto ? children : <Navigate to="/" replace />
 }
 
-/** Rota raiz: redireciona para a operação pendente se o app foi fechado no meio de uma compra */
 function RootRoute() {
   const { caixaAberto } = useCaixaStore()
   const { itens } = useCarrinhoStore()
@@ -39,7 +38,7 @@ export default function App() {
         <Route path="/impressao"   element={<Protegida><ImpressaoCupomPage /></Protegida>} />
         <Route path="/vendas"      element={<Protegida><ConsultaVendasPage /></Protegida>} />
         <Route path="/fechar"      element={<Protegida><FechamentoCaixaPage /></Protegida>} />
-        <Route path="/confirmar-gerente" element={<Protegida><ConfirmacaoGerentePage /></Protegida>} />
+        <Route path="/pesagem"     element={<Protegida><PesagemPage /></Protegida>} />
         <Route path="*"            element={<Navigate to="/" replace />} />
       </Routes>
     </div>
